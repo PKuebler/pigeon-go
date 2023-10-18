@@ -1,4 +1,4 @@
-#  Pigeon-Go
+#  Pigeon-Go [![codecov](https://codecov.io/gh/PKuebler/pigeon-go/graph/badge.svg?token=YM26YKAWUJ)](https://codecov.io/gh/PKuebler/pigeon-go)
 
 A JSON patch module to exchange data compatible with the JS Package [Pigeon](https://github.com/frameable/pigeon).
 
