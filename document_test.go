@@ -52,8 +52,21 @@ func TestApplyChanges(t *testing.T) {
 		Cid: "50reifj9hyt",
 		Gid: "fhs52fqgdd",
 	})
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:   "remove",
+				Path: "/notexist",
+				Prev: rawMessage(`"Dieter"`),
+			},
+		},
+		Ts:  5,
+		Cid: "50reifj9hyt",
+		Gid: "hhde2ffcgj",
+	})
 
 	assert.Equal(t, `{"name":"Phil"}`, string(doc.JSON))
+	assert.Equal(t, "patch error: error in remove for path: '/notexist': Unable to remove nonexistent key: notexist: missing value", doc.Warning)
 }
 
 func BenchmarkApplyChanges(b *testing.B) {
