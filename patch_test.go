@@ -12,44 +12,64 @@ func TestPatch(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		doc   []byte
-		patch []byte
-		want  []byte
+		doc       []byte
+		patch     []byte
+		want      []byte
+		wantError bool
 	}{
 		{
-			doc:   []byte(`{ "count": 1 }`),
-			patch: []byte(`[{ "op": "replace", "path": "/count", "value": 2 }]`),
-			want:  []byte(`{ "count": 2 }`),
+			doc:       []byte(`{ "count": 1 }`),
+			patch:     []byte(`[{ "op": "replace", "path": "/count", "value": 2 }]`),
+			want:      []byte(`{ "count": 2 }`),
+			wantError: false,
 		},
 		{
-			doc:   []byte(`{ "count": 1, "actor": { "name": "bim" } }`),
-			patch: []byte(`[{ "op": "replace", "path": "/actor/name", "value": "bam" }]`),
-			want:  []byte(`{ "count": 1, "actor": { "name": "bam" } }`),
+			doc:       []byte(`{ "count": 1, "actor": { "name": "bim" } }`),
+			patch:     []byte(`[{ "op": "replace", "path": "/actor/name", "value": "bam" }]`),
+			want:      []byte(`{ "count": 1, "actor": { "name": "bam" } }`),
+			wantError: false,
 		},
 		{
-			doc:   []byte(`[{"id": 1, "name": "betsy"}, {"id": 2, "name": "hank"}]`),
-			patch: []byte(`[{ "op": "replace", "path": "/[2]/name", "value": "henry" }]`),
-			want:  []byte(`[{"id": 1, "name": "betsy"}, {"id": 2, "name": "henry"}]`),
+			doc:       []byte(`[{"id": 1, "name": "betsy"}, {"id": 2, "name": "hank"}]`),
+			patch:     []byte(`[{ "op": "replace", "path": "/[2]/name", "value": "henry" }]`),
+			want:      []byte(`[{"id": 1, "name": "betsy"}, {"id": 2, "name": "henry"}]`),
+			wantError: false,
 		},
 		{
-			doc:   []byte(`[1,2,3,4,5,6]`),
-			patch: []byte(`[{"op":"add","path":"/3","value":33}]`),
-			want:  []byte(`[1,2,3,33,4,5,6]`),
+			doc:       []byte(`[{"id": 1, "name": "betsy"}, {"id": 2, "name": "hank"}]`),
+			patch:     []byte(`[{ "op": "replace", "path": "/[5]/name", "value": "henry" }]`),
+			want:      []byte(`[{"id": 1, "name": "betsy"}, {"id": 2, "name": "hank"}]`),
+			wantError: true,
 		},
 		{
-			doc:   []byte(`[1,2,3,4,5,6]`),
-			patch: []byte(`[{"op":"remove","path":"/3"}]`),
-			want:  []byte(`[1,2,3,5,6]`),
+			doc:       []byte(`[1,2,3,4,5,6]`),
+			patch:     []byte(`[{"op":"add","path":"/3","value":33}]`),
+			want:      []byte(`[1,2,3,33,4,5,6]`),
+			wantError: false,
 		},
 		{
-			doc:   []byte(`[{"id":"def"},{"id":"abc"},{"id":"ghi"}]`),
-			patch: []byte(`[{"op":"move","from":"/[abc]","path":"/0"}]`),
-			want:  []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
+			doc:       []byte(`[1,2,3,4,5,6]`),
+			patch:     []byte(`[{"op":"remove","path":"/3"}]`),
+			want:      []byte(`[1,2,3,5,6]`),
+			wantError: false,
 		},
 		{
-			doc:   []byte(`[{"id":"def"},{"id":"abc"},{"id":"ghi"}]`),
-			patch: []byte(`[{"op":"move","from":"/1","path":"/0"}]`),
-			want:  []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
+			doc:       []byte(`[{"id":"def"},{"id":"abc"},{"id":"ghi"}]`),
+			patch:     []byte(`[{"op":"move","from":"/[abc]","path":"/0"}]`),
+			want:      []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
+			wantError: false,
+		},
+		{
+			doc:       []byte(`[{"id":"def"},{"id":"abc"},{"id":"ghi"}]`),
+			patch:     []byte(`[{"op":"move","from":"/1","path":"/0"}]`),
+			want:      []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
+			wantError: false,
+		},
+		{
+			doc:       []byte(`{"id":"def"}`),
+			patch:     []byte(`[{"op":"remove","path":"/email"}]`),
+			want:      []byte(`{"id":"def"}`),
+			wantError: true,
 		},
 	}
 
@@ -59,12 +79,12 @@ func TestPatch(t *testing.T) {
 		err := json.Unmarshal(testCase.patch, &operations)
 		assert.NoError(t, err, fmt.Sprintf("test %d", i))
 
-		for _, op := range operations {
-			fmt.Println(i, op.Op, op.Path, op.From, op.Value, op.Prev)
-		}
-
 		result, err := patch(testCase.doc, operations)
-		assert.NoError(t, err, fmt.Sprintf("test %d", i))
+		if testCase.wantError {
+			assert.Error(t, err, fmt.Sprintf("test %d", i))
+		} else {
+			assert.NoError(t, err, fmt.Sprintf("test %d", i))
+		}
 		assert.JSONEq(t, string(testCase.want), string(result), fmt.Sprintf("test %d", i))
 	}
 }

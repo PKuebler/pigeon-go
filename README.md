@@ -11,11 +11,11 @@ package main
 
 import (
     "fmt"
-    "github.com/pkuebler/pigeon-go"
+    pigeongo "github.com/pkuebler/pigeon-go"
 )
 
 func main() {
-    doc := NewDocument([]byte(`{ "name": "Philipp" }`))
+    doc := pigeongo.NewDocument([]byte(`{ "name": "Philipp" }`))
 
     doc.ApplyChanges(Changes{
 		Diff: []Operation{
@@ -33,5 +33,7 @@ func main() {
 
     // Print JSON
     fmt.Println(doc.JSON)
+    // Print Warnings
+    fmt.Println(doc.Warning)
 }
 ```
