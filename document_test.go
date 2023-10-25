@@ -1,6 +1,7 @@
 package pigeongo
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/google/uuid"
@@ -65,8 +66,11 @@ func TestApplyChanges(t *testing.T) {
 		Gid: "hhde2ffcgj",
 	})
 
-	assert.Equal(t, `{"name":"Phil"}`, string(doc.JSON))
+	assert.Equal(t, `{"name":"Phil"}`, string(doc.JSON()))
 	assert.Equal(t, "patch error: error in remove for path: '/notexist': Unable to remove nonexistent key: notexist: missing value", doc.Warning)
+
+	_, err := json.Marshal(doc.History())
+	assert.NoError(t, err)
 }
 
 func BenchmarkApplyChanges(b *testing.B) {
