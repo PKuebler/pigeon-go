@@ -8,23 +8,23 @@ import (
 )
 
 type Document struct {
-	JSON    []byte         `json:"json"`
-	History []Changes      `json:"history"`
-	Warning string         `json:"warning"`
-	Gids    map[string]int `json:"gids"`
-	Stash   []Changes      `json:"stash"`
+	raw     []byte
+	history []Changes
+	Warning string
+	gids    map[string]int
+	stash   []Changes
 }
 
-func NewDocument(json []byte) *Document {
+func NewDocument(raw []byte) *Document {
 	return &Document{
-		JSON: json,
-		History: []Changes{
+		raw: raw,
+		history: []Changes{
 			{
 				Diff: []Operation{
 					{
 						Op:    "add",
 						Path:  "/",
-						Value: rawMessage(string(json)),
+						Value: rawMessage(string(raw)),
 					},
 				},
 				Ts:  0,
@@ -32,8 +32,8 @@ func NewDocument(json []byte) *Document {
 				Gid: "0",
 			},
 		},
-		Gids:  map[string]int{},
-		Stash: []Changes{},
+		gids:  map[string]int{},
+		stash: []Changes{},
 	}
 }
 
@@ -59,8 +59,19 @@ type Operation struct {
 	Prev  *json.RawMessage `json:"_prev,omitempty"`
 }
 
+func (d *Document) JSON() []byte {
+	return d.raw
+}
+
+func (d *Document) History() []Changes {
+	return d.history
+}
+
 func (d *Document) ApplyChanges(changes Changes) {
-	if _, ok := d.Gids[changes.Gid]; ok {
+	// reset warning
+	d.Warning = ""
+
+	if _, ok := d.gids[changes.Gid]; ok {
 		return
 	}
 
@@ -69,65 +80,65 @@ func (d *Document) ApplyChanges(changes Changes) {
 	}
 
 	var err error
-	d.JSON, err = patch(d.JSON, changes.Diff)
+	d.raw, err = patch(d.raw, changes.Diff)
 	if err != nil {
 		d.Warning = fmt.Sprintf("patch error: %s", err.Error())
 	}
 
-	d.Gids[changes.Gid] = 1
+	d.gids[changes.Gid] = 1
 
 	if err := d.FastForwardChanges(); err != nil {
 		d.Warning = fmt.Sprintf("fast forward error: %s", err.Error())
 	}
 
-	idx := len(d.History)
+	idx := len(d.history)
 	if idx == 0 {
-		d.History = append(d.History, changes)
+		d.history = append(d.history, changes)
 		return
 	}
 
 	// find position to insert
-	for idx > 1 && d.History[idx-1].Ts > changes.Ts {
+	for idx > 1 && d.history[idx-1].Ts > changes.Ts {
 		idx--
 	}
 
 	// empty history or after last element
-	if len(d.History) == idx {
-		d.History = append(d.History, changes)
+	if len(d.history) == idx {
+		d.history = append(d.history, changes)
 		return
 	}
 
-	d.History = append(d.History[:idx+1], d.History[idx:]...)
-	d.History[idx] = changes
+	d.history = append(d.history[:idx+1], d.history[idx:]...)
+	d.history[idx] = changes
 }
 
 func (d *Document) FastForwardChanges() error {
 	var err error
-	for _, change := range d.Stash {
-		d.JSON, err = patch(d.JSON, change.Diff)
+	for _, change := range d.stash {
+		d.raw, err = patch(d.raw, change.Diff)
 		if err != nil {
 			return err
 		}
-		d.Gids[change.Gid] = 1
-		d.History = append(d.History, change)
+		d.gids[change.Gid] = 1
+		d.history = append(d.history, change)
 	}
-	d.Stash = []Changes{}
+	d.stash = []Changes{}
 
 	return nil
 }
 
 func (d *Document) RewindChanges(ts int, cid string) error {
-	docJSON := d.JSON
+	docJSON := d.raw
 	for {
-		if len(d.History) <= 1 {
+		if len(d.history) <= 1 {
 			break
 		}
 
-		change := d.History[len(d.History)-1]
+		change := d.history[len(d.history)-1]
 		if change.Ts > ts || (change.Ts == ts && change.Cid > cid) {
 			// get element and pop from history
-			c := d.History[len(d.History)-1]
-			d.History = d.History[:len(d.History)-1]
+			c := d.history[len(d.history)-1]
+			d.history = d.history[:len(d.history)-1]
 
 			var err error
 			docJSON, err = patch(docJSON, reverse(c.Diff))
@@ -135,14 +146,14 @@ func (d *Document) RewindChanges(ts int, cid string) error {
 				return err
 			}
 
-			delete(d.Gids, c.Gid)
-			d.Stash = append(d.Stash, c)
+			delete(d.gids, c.Gid)
+			d.stash = append(d.stash, c)
 			continue
 		}
 		break
 	}
 
-	d.JSON = docJSON
+	d.raw = docJSON
 
 	return nil
 }
