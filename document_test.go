@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/buger/jsonparser"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -94,5 +95,32 @@ func BenchmarkApplyChanges(b *testing.B) {
 			Gid: "dva96nqsdd",
 		})
 		lastValue = nextValue
+	}
+}
+
+func TestRawToJSON(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		value []byte
+	}{
+		{
+			value: []byte(`1`),
+		},
+		{
+			value: []byte(`"string"`),
+		},
+		{
+			value: []byte(`{"a": "b"}`),
+		},
+		{
+			value: []byte(`[1,2,3,4]`),
+		},
+	}
+
+	for _, testCase := range testCases {
+		value, dataType, _, _ := jsonparser.Get(testCase.value)
+		result := rawToJSON(value, dataType)
+		assert.Equal(t, string(testCase.value), string(*result))
 	}
 }

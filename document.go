@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/buger/jsonparser"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
@@ -16,20 +17,45 @@ type Document struct {
 }
 
 func NewDocument(raw []byte) *Document {
+	diff := []Operation{}
+
+	_, dataType, _, _ := jsonparser.Get(raw)
+	switch dataType {
+	case jsonparser.Array:
+		i := 0
+		_, _ = jsonparser.ArrayEach(raw, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+			diff = append(diff, Operation{
+				Op:    "add",
+				Path:  fmt.Sprintf("/%d", i),
+				Value: rawToJSON(value, dataType),
+			})
+			i++
+		})
+	case jsonparser.Object:
+		_ = jsonparser.ObjectEach(raw, func(key, value []byte, dataType jsonparser.ValueType, offset int) error {
+			diff = append(diff, Operation{
+				Op:    "add",
+				Path:  fmt.Sprintf("/%s", key),
+				Value: rawToJSON(value, dataType),
+			})
+			return nil
+		})
+	default:
+		diff = append(diff, Operation{
+			Op:    "add",
+			Path:  "/",
+			Value: rawToJSON(raw, dataType),
+		})
+	}
+
 	return &Document{
 		raw: raw,
 		history: []Changes{
 			{
-				Diff: []Operation{
-					{
-						Op:    "add",
-						Path:  "/",
-						Value: rawMessage(string(raw)),
-					},
-				},
-				Ts:  0,
-				Cid: "0",
-				Gid: "0",
+				Diff: diff,
+				Ts:   0,
+				Cid:  "0",
+				Gid:  "0",
 			},
 		},
 		gids:  map[string]int{},
@@ -155,6 +181,28 @@ func (d *Document) RewindChanges(ts int, cid string) error {
 
 	d.raw = docJSON
 
+	return nil
+}
+
+func rawToJSON(value []byte, dataType jsonparser.ValueType) *json.RawMessage {
+	switch dataType {
+	case jsonparser.String:
+		return rawMessage(fmt.Sprintf(`"%s"`, string(value)))
+	case jsonparser.Number:
+		return rawMessage(string(value))
+	case jsonparser.Object:
+		return rawMessage(string(value))
+	case jsonparser.Array:
+		return rawMessage(string(value))
+	case jsonparser.Boolean:
+		return rawMessage(string(value))
+	case jsonparser.Null:
+		return rawMessage(string("null"))
+	case jsonparser.Unknown:
+		return rawMessage(string(value))
+	case jsonparser.NotExist:
+		return rawMessage(string("null"))
+	}
 	return nil
 }
 

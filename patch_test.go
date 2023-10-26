@@ -71,6 +71,16 @@ func TestPatch(t *testing.T) {
 			want:      []byte(`{"id":"def"}`),
 			wantError: true,
 		},
+		{
+			doc:   []byte(`{}`),
+			patch: []byte(`[{"op":"add","path":"/","value":{"hello":"world"}}]`),
+			want:  []byte(`{"":{"hello":"world"}}`),
+		},
+		{
+			doc:   []byte(`{}`),
+			patch: []byte(`[{"op":"add","path":"/hello","value":"world"}]`),
+			want:  []byte(`{"hello":"world"}`),
+		},
 	}
 
 	for i, testCase := range testCases {

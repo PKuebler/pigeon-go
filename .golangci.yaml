@@ -23,6 +23,10 @@ linters:
     - unconvert
     - whitespace
 
+linters-settings:
+  exhaustive:
+    default-signifies-exhaustive: true
+
 issues:
   exclude-use-default: false
   max-issues-per-linter: 0
