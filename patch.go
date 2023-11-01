@@ -42,29 +42,42 @@ func replacePaths(doc []byte, patchObj jsonpatch.Patch) jsonpatch.Patch {
 
 func replacePath(doc []byte, path string) string {
 	parts := strings.Split(path, "/")
-	keys := make([]string, len(parts))
-	for i, part := range parts {
+	newParts := make([]string, len(parts))
+	keys := []string{}
+
+	for partIndex, part := range parts {
+		if part == "" {
+			newParts[partIndex] = part
+			continue
+		}
+
 		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
-			i := 0
+			searchID := strings.TrimSuffix(strings.TrimPrefix(part, "["), "]")
+			childPosition := 0
 			if _, err := jsonparser.ArrayEach(doc, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 				if err != nil {
 					panic(err)
 				}
 
 				id, _, _, _ := jsonparser.Get(value, "id")
-				if string(id) == part[1:len(part)-1] {
-					keys[i] = fmt.Sprintf("%d", i)
+				if string(id) == searchID {
+					key := fmt.Sprintf("%d", childPosition)
+					keys = append(keys, key)
+					newParts[partIndex] = key
 				}
-				i++
-			}); err != nil {
-				keys[i] = part
+
+				childPosition++
+			}, keys...); err != nil {
+				keys = append(keys, part)
+				newParts[partIndex] = part
 			}
 		} else {
-			keys[i] = part
+			keys = append(keys, part)
+			newParts[partIndex] = part
 		}
 	}
 
-	return strings.Join(keys, "/")
+	return strings.Join(newParts, "/")
 }
 
 func findID(payload []byte) string {
