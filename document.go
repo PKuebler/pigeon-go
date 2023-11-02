@@ -17,6 +17,22 @@ type Document struct {
 }
 
 func NewDocument(raw []byte) *Document {
+	return &Document{
+		raw: raw,
+		history: []Changes{
+			{
+				Diff: createInitialDiff(raw),
+				Ts:   0,
+				Cid:  "0",
+				Gid:  "0",
+			},
+		},
+		gids:  map[string]int{},
+		stash: []Changes{},
+	}
+}
+
+func createInitialDiff(raw []byte) []Operation {
 	diff := []Operation{}
 
 	_, dataType, _, _ := jsonparser.Get(raw)
@@ -48,24 +64,12 @@ func NewDocument(raw []byte) *Document {
 		})
 	}
 
-	return &Document{
-		raw: raw,
-		history: []Changes{
-			{
-				Diff: diff,
-				Ts:   0,
-				Cid:  "0",
-				Gid:  "0",
-			},
-		},
-		gids:  map[string]int{},
-		stash: []Changes{},
-	}
+	return diff
 }
 
 type Changes struct {
 	Diff []Operation `json:"diff"`
-	Ts   int         `json:"ts"`
+	Ts   int64       `json:"ts"`
 	Cid  string      `json:"cid"`
 	Seq  int         `json:"seq"`
 	Gid  string      `json:"gid"`
@@ -153,7 +157,7 @@ func (d *Document) FastForwardChanges() error {
 	return nil
 }
 
-func (d *Document) RewindChanges(ts int, cid string) error {
+func (d *Document) RewindChanges(ts int64, cid string) error {
 	docJSON := d.raw
 	for {
 		if len(d.history) <= 1 {
@@ -182,6 +186,34 @@ func (d *Document) RewindChanges(ts int, cid string) error {
 	d.raw = docJSON
 
 	return nil
+}
+
+func (d *Document) ReduceHistory(minTs int64) {
+	history := []Changes{
+		{
+			Diff: createInitialDiff(d.raw),
+			Ts:   0,
+			Cid:  "0",
+			Gid:  "0",
+		},
+	}
+
+	for i, change := range d.history {
+		if i == 0 {
+			// skip init
+			continue
+		}
+
+		if change.Ts >= minTs {
+			history = append(history, change)
+		} else {
+			history[0].Ts = change.Ts
+			history[0].Cid = change.Cid
+			history[0].Gid = change.Gid
+		}
+	}
+
+	d.history = history
 }
 
 func rawToJSON(value []byte, dataType jsonparser.ValueType) *json.RawMessage {
