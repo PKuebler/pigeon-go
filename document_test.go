@@ -72,6 +72,9 @@ func TestApplyChanges(t *testing.T) {
 
 	_, err := json.Marshal(doc.History())
 	assert.NoError(t, err)
+
+	doc.ReduceHistory(5)
+	assert.Len(t, doc.History(), 2)
 }
 
 func BenchmarkApplyChanges(b *testing.B) {
@@ -90,7 +93,7 @@ func BenchmarkApplyChanges(b *testing.B) {
 					Prev:  lastValue,
 				},
 			},
-			Ts:  n,
+			Ts:  int64(n),
 			Cid: "50reifj9hyt",
 			Gid: "dva96nqsdd",
 		})
