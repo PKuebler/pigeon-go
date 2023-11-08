@@ -6,6 +6,8 @@ A JSON patch module to exchange data compatible with the JS Package [Pigeon](htt
 
 No, this is a very early unfinished version. Please use with caution.
 
+## Example
+
 ```golang
 package main
 

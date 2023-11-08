@@ -66,6 +66,24 @@ func TestPatch(t *testing.T) {
 			wantError: false,
 		},
 		{
+			doc:       []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
+			patch:     []byte(`[{"op":"move","from":"/[ghi]","path":"/1"},{"op":"move","from":"/[def]","path":"/2"}]`),
+			want:      []byte(`[{"id":"abc"},{"id":"ghi"},{"id":"def"}]`),
+			wantError: false,
+		},
+		{
+			doc:       []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
+			patch:     []byte(`[{"op":"move","from":"/2","path":"/1"},{"op":"move","from":"/1","path":"/2"}]`),
+			want:      []byte(`[{"id":"abc"},{"id":"ghi"},{"id":"def"}]`),
+			wantError: false,
+		},
+		{
+			doc:       []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"},{"id":"jkl"}]`),
+			patch:     []byte(`[{"op":"move","from":"/2","path":"/1"},{"op":"move","from":"/3","path":"/0"}]`),
+			want:      []byte(`[{"id":"jkl"},{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
+			wantError: false,
+		},
+		{
 			doc:       []byte(`{"id":"def"}`),
 			patch:     []byte(`[{"op":"remove","path":"/email"}]`),
 			want:      []byte(`{"id":"def"}`),
