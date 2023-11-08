@@ -9,12 +9,18 @@ import (
 )
 
 func patch(doc []byte, operations []Operation) ([]byte, error) {
-	patchObj := NewJsonpatchPatch(operations)
-	patchObj = replacePaths(doc, patchObj)
-	newDoc, err := patchObj.Apply(doc)
-	if err != nil {
-		return doc, err
+	var newDoc []byte
+	for _, operation := range operations {
+		patchObj := NewJsonpatchPatch([]Operation{operation})
+		patchObj = replacePaths(doc, patchObj)
+
+		var err error
+		newDoc, err = patchObj.Apply(doc)
+		if err != nil {
+			return doc, err
+		}
 	}
+
 	return newDoc, nil
 }
 
