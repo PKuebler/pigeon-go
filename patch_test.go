@@ -74,13 +74,19 @@ func TestPatch(t *testing.T) {
 		{
 			doc:       []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
 			patch:     []byte(`[{"op":"move","from":"/2","path":"/1"},{"op":"move","from":"/1","path":"/2"}]`),
-			want:      []byte(`[{"id":"abc"},{"id":"ghi"},{"id":"def"}]`),
+			want:      []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
 			wantError: false,
 		},
 		{
 			doc:       []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"},{"id":"jkl"}]`),
 			patch:     []byte(`[{"op":"move","from":"/2","path":"/1"},{"op":"move","from":"/3","path":"/0"}]`),
-			want:      []byte(`[{"id":"jkl"},{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
+			want:      []byte(`[{"id":"jkl"},{"id":"abc"},{"id":"ghi"},{"id":"def"}]`),
+			wantError: false,
+		},
+		{
+			doc:       []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"},{"id":"jkl"}]`),
+			patch:     []byte(`[{"op":"move","from":"/[ghi]","path":"/0"},{"op":"move","from":"/[abc]","path":"/1"},{"op":"move","from":"/[def]","path":"/2"}]`),
+			want:      []byte(`[{"id":"ghi"},{"id":"abc"},{"id":"def"},{"id":"jkl"}]`),
 			wantError: false,
 		},
 		{
@@ -108,6 +114,7 @@ func TestPatch(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
+		fmt.Println(i, ">", string(testCase.patch))
 		operations := []Operation{}
 
 		err := json.Unmarshal(testCase.patch, &operations)
