@@ -132,7 +132,7 @@ func TestPatch(t *testing.T) {
 		err := json.Unmarshal(testCase.patch, &operations)
 		assert.NoError(t, err, fmt.Sprintf("test %d", i))
 
-		result, err := patch(testCase.doc, operations)
+		result, err := patch(testCase.doc, operations, [][]string{{"id"}})
 		if testCase.wantError {
 			assert.Error(t, err, fmt.Sprintf("test %d", i))
 		} else {
@@ -154,7 +154,7 @@ func BenchmarkPatch(b *testing.B) {
 			b.Fatal(err)
 		}
 
-		result, err := patch(doc, operations)
+		result, err := patch(doc, operations, [][]string{{"id"}})
 		if err != nil {
 			b.Fatal(err)
 		}

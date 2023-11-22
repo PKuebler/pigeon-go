@@ -97,7 +97,7 @@ func TestReverse(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		reversedOperations := reverse(testCase.operations)
+		reversedOperations := reverse(testCase.operations, [][]string{{"id"}})
 
 		assert.Equal(t, testCase.expected, reversedOperations, fmt.Sprintf("test %d", i))
 	}
@@ -120,6 +120,6 @@ func BenchmarkReverse(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		reverse(operations)
+		reverse(operations, [][]string{{"id"}})
 	}
 }

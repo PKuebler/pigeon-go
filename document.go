@@ -8,28 +8,45 @@ import (
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
-type Document struct {
-	raw     []byte
-	history []Changes
-	Warning string
-	gids    map[string]int
-	stash   []Changes
+type DocumentOption func(*Document)
+
+func WithIdentifiers(identifiers [][]string) DocumentOption {
+	return func(d *Document) {
+		d.identifiers = identifiers
+	}
 }
 
-func NewDocument(raw []byte) *Document {
-	return &Document{
-		raw: raw,
-		history: []Changes{
-			{
-				Diff: createInitialDiff(raw),
-				Ts:   0,
-				Cid:  "0",
-				Gid:  "0",
-			},
-		},
-		gids:  map[string]int{},
-		stash: []Changes{},
+type Document struct {
+	raw         []byte
+	history     []Changes
+	Warning     string
+	gids        map[string]int
+	stash       []Changes
+	identifiers [][]string
+}
+
+func NewDocument(raw []byte, opts ...DocumentOption) *Document {
+	doc := &Document{
+		raw:         raw,
+		gids:        map[string]int{},
+		stash:       []Changes{},
+		identifiers: [][]string{{"id"}},
 	}
+
+	for _, opt := range opts {
+		opt(doc)
+	}
+
+	doc.history = []Changes{
+		{
+			Diff: createInitialDiff(raw),
+			Ts:   0,
+			Cid:  "0",
+			Gid:  "0",
+		},
+	}
+
+	return doc
 }
 
 func createInitialDiff(raw []byte) []Operation {
@@ -110,7 +127,7 @@ func (d *Document) ApplyChanges(changes Changes) {
 	}
 
 	var err error
-	d.raw, err = patch(d.raw, changes.Diff)
+	d.raw, err = patch(d.raw, changes.Diff, d.identifiers)
 	if err != nil {
 		d.Warning = fmt.Sprintf("patch error: %s", err.Error())
 	}
@@ -145,7 +162,7 @@ func (d *Document) ApplyChanges(changes Changes) {
 func (d *Document) FastForwardChanges() error {
 	var err error
 	for _, change := range d.stash {
-		d.raw, err = patch(d.raw, change.Diff)
+		d.raw, err = patch(d.raw, change.Diff, d.identifiers)
 		if err != nil {
 			return err
 		}
@@ -171,7 +188,7 @@ func (d *Document) RewindChanges(ts int64, cid string) error {
 			d.history = d.history[:len(d.history)-1]
 
 			var err error
-			docJSON, err = patch(docJSON, reverse(c.Diff))
+			docJSON, err = patch(docJSON, reverse(c.Diff, d.identifiers), d.identifiers)
 			if err != nil {
 				return err
 			}

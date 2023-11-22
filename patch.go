@@ -8,13 +8,13 @@ import (
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
 )
 
-func patch(doc []byte, operations []Operation) ([]byte, error) {
+func patch(doc []byte, operations []Operation, identifiers [][]string) ([]byte, error) {
 	newDoc := doc
 	var err error
 
 	for _, operation := range operations {
 		patchObj := NewJsonpatchPatch([]Operation{operation})
-		patchObj = replacePaths(newDoc, patchObj)
+		patchObj = replacePaths(newDoc, patchObj, identifiers)
 
 		newDoc, err = patchObj.Apply(newDoc)
 		if err != nil {
@@ -25,7 +25,7 @@ func patch(doc []byte, operations []Operation) ([]byte, error) {
 	return newDoc, nil
 }
 
-func replacePaths(doc []byte, patchObj jsonpatch.Patch) jsonpatch.Patch {
+func replacePaths(doc []byte, patchObj jsonpatch.Patch, identifiers [][]string) jsonpatch.Patch {
 	for _, patch := range patchObj {
 		path, errPath := patch.Path()
 		from, errFrom := patch.From()
@@ -34,12 +34,12 @@ func replacePaths(doc []byte, patchObj jsonpatch.Patch) jsonpatch.Patch {
 		}
 
 		if path != "" {
-			path = replacePath(doc, path)
+			path = replacePath(doc, path, identifiers)
 			patch["path"] = rawMessage(fmt.Sprintf("\"%s\"", path))
 		}
 
 		if from != "" {
-			from = replacePath(doc, from)
+			from = replacePath(doc, from, identifiers)
 			patch["from"] = rawMessage(fmt.Sprintf("\"%s\"", from))
 		}
 	}
@@ -47,7 +47,7 @@ func replacePaths(doc []byte, patchObj jsonpatch.Patch) jsonpatch.Patch {
 	return patchObj
 }
 
-func replacePath(doc []byte, path string) string {
+func replacePath(doc []byte, path string, identifiers [][]string) string {
 	parts := strings.Split(path, "/")
 	newParts := make([]string, len(parts))
 	keys := []string{}
@@ -66,8 +66,7 @@ func replacePath(doc []byte, path string) string {
 					panic(err)
 				}
 
-				id, _, _, _ := jsonparser.Get(value, "id")
-				if string(id) == searchID {
+				if findID(value, identifiers) == searchID {
 					key := fmt.Sprintf("%d", childPosition)
 					keys = append(keys, key)
 					newParts[partIndex] = key
@@ -85,16 +84,4 @@ func replacePath(doc []byte, path string) string {
 	}
 
 	return strings.Join(newParts, "/")
-}
-
-func findID(payload []byte) string {
-	id, dataType, _, _ := jsonparser.Get(payload, "id")
-	switch dataType {
-	case jsonparser.Number, jsonparser.String:
-		return string(id)
-	case jsonparser.Null, jsonparser.NotExist, jsonparser.Boolean, jsonparser.Object, jsonparser.Array, jsonparser.Unknown:
-		return ""
-	}
-
-	return ""
 }

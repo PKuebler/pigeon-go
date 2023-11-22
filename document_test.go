@@ -127,3 +127,79 @@ func TestRawToJSON(t *testing.T) {
 		assert.Equal(t, string(testCase.value), string(*result))
 	}
 }
+
+func TestIdentifiers(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		identifiers [][]string
+		path        string
+		value       []byte
+		expected    string
+	}{
+		{
+			identifiers: nil,
+			path:        "/[123]/name",
+			value:       []byte(`[{"id": 123, "name": "card1", "value": 1}]`),
+			expected:    `[{"id":123,"name":"card2","value":1}]`,
+		},
+		{
+			identifiers: [][]string{{"id"}},
+			path:        "/[123]/name",
+			value:       []byte(`[{"id": 123, "name": "card1", "value": 1}]`),
+			expected:    `[{"id":123,"name":"card2","value":1}]`,
+		},
+		{
+			identifiers: [][]string{{"id"}},
+			path:        "/[123]/name",
+			value:       []byte(`[{"id": "123", "name": "card1", "value": 1}]`),
+			expected:    `[{"id":"123","name":"card2","value":1}]`,
+		},
+		{
+			identifiers: [][]string{{"attrs", "id"}},
+			path:        "/[123]/name",
+			value:       []byte(`[{"attrs": {"id": 123}, "name": "card1", "value": 1}]`),
+			expected:    `[{"attrs":{"id":123},"name":"card2","value": 1}]`,
+		},
+		{
+			identifiers: [][]string{{"attrs", "id"}},
+			path:        "/[123]/name",
+			value:       []byte(`[{"attrs": {"id": "123"}, "name": "card1", "value": 1}]`),
+			expected:    `[{"attrs":{"id":"123"},"name":"card2","value": 1}]`,
+		},
+		{
+			identifiers: [][]string{{"attrs", "id"}},
+			path:        "/[123]/name",
+			value:       []byte(`[{"id": "123", "name": "card1", "value": 1}]`),
+			expected:    `[{"id":"123","name":"card1","value": 1}]`,
+		},
+	}
+
+	for _, testCase := range testCases {
+		var opts []DocumentOption
+		if testCase.identifiers != nil {
+			opts = append(opts, WithIdentifiers(testCase.identifiers))
+		}
+		doc := NewDocument(testCase.value, opts...)
+		if testCase.identifiers != nil {
+			assert.Equal(t, testCase.identifiers, doc.identifiers)
+		}
+
+		// patch name by identifier
+		doc.ApplyChanges(Changes{
+			Diff: []Operation{
+				{
+					Op:    "replace",
+					Path:  testCase.path,
+					Value: rawMessage(`"card2"`),
+					Prev:  rawMessage(`"card1"`),
+				},
+			},
+			Ts:  1,
+			Cid: "50reifj9hyt",
+			Gid: "dva96nqsdd",
+		})
+
+		assert.JSONEq(t, testCase.expected, string(doc.JSON()))
+	}
+}

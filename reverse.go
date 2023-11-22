@@ -2,7 +2,7 @@ package pigeongo
 
 import "strings"
 
-func reverse(operations []Operation) []Operation {
+func reverse(operations []Operation, identifiers [][]string) []Operation {
 	reversedOperations := make([]Operation, len(operations))
 
 	// reverse
@@ -12,7 +12,7 @@ func reverse(operations []Operation) []Operation {
 		switch operation.Op {
 		case "add":
 			operation.Op = "remove"
-			id := findID(*operation.Value)
+			id := findID(*operation.Value, identifiers)
 			if id != "" {
 				parts := strings.Split(operation.Path, "/")
 				parts[len(parts)-1] = "[" + id + "]"
