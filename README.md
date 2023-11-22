@@ -39,3 +39,9 @@ func main() {
     fmt.Println(doc.Warning)
 }
 ```
+
+## Custom Identifier
+
+```golang
+pigeongo.NewDocument([]byte(`[{ "attrs": { "id": 123 }, "name": "Philipp" }]`), pigeongo.WithCustomIdentifier([][]string{{"id"},{"attrs", "id"}}))
+```
