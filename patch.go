@@ -67,9 +67,8 @@ func replacePath(doc []byte, path string, identifiers [][]string) string {
 				}
 
 				if findID(value, identifiers) == searchID {
-					key := fmt.Sprintf("%d", childPosition)
-					keys = append(keys, key)
-					newParts[partIndex] = key
+					keys = append(keys, fmt.Sprintf("[%d]", childPosition))
+					newParts[partIndex] = fmt.Sprintf("%d", childPosition)
 				}
 
 				childPosition++
