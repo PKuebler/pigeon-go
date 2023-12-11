@@ -173,6 +173,30 @@ func TestIdentifiers(t *testing.T) {
 			value:       []byte(`[{"id": "123", "name": "card1", "value": 1}]`),
 			expected:    `[{"id":"123","name":"card1","value": 1}]`,
 		},
+		{
+			identifiers: [][]string{{"id"}},
+			path:        "/[123]/content/[hello]/text",
+			value:       []byte(`[{"id": "123", "content": [{"id":"hello", "text":"card1"}, {"id": "foo", "text": "baa"}], "value": 1}]`),
+			expected:    `[{"id": "123", "content": [{"id":"hello", "text":"card2"}, {"id": "foo", "text": "baa"}], "value": 1}]`,
+		},
+		{
+			identifiers: [][]string{{"id"}},
+			path:        "/[123]/content/[notfound]/text",
+			value:       []byte(`[{"id": "123", "content": [{"id":"hello", "text":"card1"}, {"id": "foo", "text": "baa"}], "value": 1}]`),
+			expected:    `[{"id": "123", "content": [{"id":"hello", "text":"card1"}, {"id": "foo", "text": "baa"}], "value": 1}]`,
+		},
+		{
+			identifiers: [][]string{{"id"}},
+			path:        "/[123]/content/[1234]/text",
+			value:       []byte(`[{"id": "123", "content": [{"text":"card1"}, {"text": "baa"}], "value": 1}]`),
+			expected:    `[{"id": "123", "content": [{"text":"card1"}, {"text": "baa"}], "value": 1}]`,
+		},
+		{
+			identifiers: [][]string{{"id"}},
+			path:        "/[123]/content/1/text",
+			value:       []byte(`[{"id": "123", "content": [{"text":"card1"}, {"text": "card1"}], "value": 1}]`),
+			expected:    `[{"id": "123", "content": [{"text":"card1"}, {"text": "card2"}], "value": 1}]`,
+		},
 	}
 
 	for _, testCase := range testCases {

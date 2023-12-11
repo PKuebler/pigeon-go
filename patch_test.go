@@ -112,6 +112,18 @@ func TestPatch(t *testing.T) {
 			wantError: false,
 		},
 		{
+			doc:       []byte(`{ "body": [{"id":"abc1234","content":[{"id":"child1","text":"content 0"},{"id":"child2","text":"content 1"},{"id":"child3","text":"content 2"}]}] }`),
+			patch:     []byte(`[{ "op": "replace", "path": "/body/[abc1234]/content/[child2]/text", "value": "hallo" }]`),
+			want:      []byte(`{ "body": [{"id":"abc1234","content":[{"id":"child1","text":"content 0"},{"id":"child2","text":"hallo"},{"id":"child3","text":"content 2"}]}] }`),
+			wantError: false,
+		},
+		{
+			doc:       []byte(`{ "body": [{"id":"abc1234","content":[{"id":"child1","text":"content 0"},{"id":"child2","text":"content 1"},{"id":"child3","text":"content 2"}]}] }`),
+			patch:     []byte(`[{ "op": "replace", "path": "/body/[abc1234]/content/[child3]/text", "value": "hallo" }]`),
+			want:      []byte(`{ "body": [{"id":"abc1234","content":[{"id":"child1","text":"content 0"},{"id":"child2","text":"content 1"},{"id":"child3","text":"hallo"}]}] }`),
+			wantError: false,
+		},
+		{
 			doc: []byte(`{"body":[{"id":"id-3"},{"id":"id-2"},{"id":"id-5"},{"id":"id-6"},{"id":"id-1"},{"id":"id-7"},{"id":"id-4"}]}`),
 			patch: []byte(`[
 				{"op":"move","from":"/body/[id-1]","path":"/body/0"},
