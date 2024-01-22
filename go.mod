@@ -6,7 +6,7 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/google/uuid v1.5.0
 	github.com/stretchr/testify v1.8.4
-	gopkg.in/evanphx/json-patch.v5 v5.7.0
+	gopkg.in/evanphx/json-patch.v5 v5.8.1
 )
 
 require (
