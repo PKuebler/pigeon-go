@@ -73,7 +73,7 @@ func TestApplyChanges(t *testing.T) {
 	_, err := json.Marshal(doc.History())
 	assert.NoError(t, err)
 
-	doc.ReduceHistory(5)
+	assert.Nil(t, doc.ReduceHistory(5))
 	assert.Len(t, doc.History(), 2)
 }
 
