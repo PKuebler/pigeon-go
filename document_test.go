@@ -227,3 +227,66 @@ func TestIdentifiers(t *testing.T) {
 		assert.JSONEq(t, testCase.expected, string(doc.JSON()))
 	}
 }
+
+func TestClone(t *testing.T) {
+	t.Parallel()
+
+	doc := NewDocument([]byte(`{"id": "123"}`))
+
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card2"`),
+				Prev:  rawMessage(`"123"`),
+			},
+		},
+		Ts:  1,
+		Cid: "50reifj9hyt",
+		Gid: "dva96nqsdd",
+	})
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "add",
+				Path:  "/foo",
+				Value: rawMessage(`"baa"`),
+			},
+		},
+		Ts:  50,
+		Cid: "50reifj9hyt",
+		Gid: "jdva96nqsdd",
+	})
+
+	clone := doc.Clone()
+	assert.Equal(t, doc.JSON(), clone.JSON())
+	assert.Equal(t, doc.History(), clone.History())
+
+	assert.Nil(t, doc.ReduceHistory(100))
+	assert.Len(t, doc.History(), 1)
+	assert.Len(t, clone.History(), 3)
+
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card3"`),
+				Prev:  rawMessage(`"card2"`),
+			},
+		},
+		Ts:  110,
+		Cid: "50reifj9hyt",
+		Gid: "hre46nqsdd",
+	})
+	assert.NotEqual(t, string(doc.JSON()), string(clone.JSON()))
+
+	// don't find doc gid in clone gid list
+	_, found := clone.gids["hre46nqsdd"]
+	assert.False(t, found)
+
+	assert.Nil(t, doc.ReduceHistory(108))
+	assert.Len(t, doc.History(), 2)
+	assert.Equal(t, doc.History()[1].Gid, "hre46nqsdd")
+}
