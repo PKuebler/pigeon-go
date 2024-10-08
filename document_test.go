@@ -307,3 +307,55 @@ func TestClone(t *testing.T) {
 	assert.Len(t, doc.History(), 2)
 	assert.Equal(t, doc.History()[1].Gid, "hre46nqsdd")
 }
+
+func TestReduceHistory(t *testing.T) {
+	t.Parallel()
+
+	doc := NewDocument([]byte(`{"id": "123"}`), WithInitialIDs("client-id", "change-id"))
+
+	assert.Nil(t, doc.ReduceHistory(2000))
+	assert.Len(t, doc.History(), 1)
+	assert.Equal(t, doc.History()[0].Gid, "change-id")
+	assert.Equal(t, doc.History()[0].Cid, "client-id")
+
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card2"`),
+				Prev:  rawMessage(`"123"`),
+			},
+		},
+		Ts:  10,
+		Cid: "50reifj9hyt",
+		Gid: "dva96nqsdd",
+	})
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "add",
+				Path:  "/foo",
+				Value: rawMessage(`"baa"`),
+			},
+		},
+		Ts:  60,
+		Cid: "50reifj9hyt",
+		Gid: "jdva96nqsdd",
+	})
+
+	clone := doc.Clone()
+	assert.Nil(t, clone.ReduceHistory(20))
+	assert.Len(t, clone.History(), 2)
+	assert.Equal(t, clone.History()[0].Gid, "dva96nqsdd")
+
+	// reduce with only the initial diff
+	clone = doc.Clone()
+	assert.Nil(t, clone.ReduceHistory(1000))
+	assert.Len(t, clone.History(), 1)
+	assert.Equal(t, clone.History()[0].Gid, "jdva96nqsdd")
+
+	assert.Nil(t, clone.ReduceHistory(2000))
+	assert.Len(t, clone.History(), 1)
+	assert.Equal(t, clone.History()[0].Gid, "jdva96nqsdd")
+}
