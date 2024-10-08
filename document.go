@@ -245,6 +245,11 @@ func (d *Document) RewindChanges(ts int64, cid string) error {
 }
 
 func (d *Document) ReduceHistory(minTs int64) error {
+	// only the initial diff
+	if len(d.history) == 1 {
+		return nil
+	}
+
 	if err := d.RewindChanges(minTs, ""); err != nil {
 		return err
 	}
