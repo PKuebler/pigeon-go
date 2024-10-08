@@ -3,6 +3,7 @@ package pigeongo
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/buger/jsonparser"
 	jsonpatch "gopkg.in/evanphx/json-patch.v5"
@@ -13,6 +14,27 @@ type DocumentOption func(*Document)
 func WithIdentifiers(identifiers [][]string) DocumentOption {
 	return func(d *Document) {
 		d.identifiers = identifiers
+	}
+}
+
+func WithInitialTime(t time.Time) DocumentOption {
+	return func(d *Document) {
+		if len(d.history) == 0 {
+			return
+		}
+
+		d.history[0].Ts = t.UnixMilli()
+	}
+}
+
+func WithInitialIDs(cid, gid string) DocumentOption {
+	return func(d *Document) {
+		if len(d.history) == 0 {
+			return
+		}
+
+		d.history[0].Cid = cid
+		d.history[0].Gid = gid
 	}
 }
 
@@ -33,10 +55,6 @@ func NewDocument(raw []byte, opts ...DocumentOption) *Document {
 		identifiers: [][]string{{"id"}},
 	}
 
-	for _, opt := range opts {
-		opt(doc)
-	}
-
 	doc.history = []Changes{
 		{
 			Diff: createInitialDiff(raw),
@@ -44,6 +62,10 @@ func NewDocument(raw []byte, opts ...DocumentOption) *Document {
 			Cid:  "0",
 			Gid:  "0",
 		},
+	}
+
+	for _, opt := range opts {
+		opt(doc)
 	}
 
 	return doc

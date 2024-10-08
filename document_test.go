@@ -3,6 +3,7 @@ package pigeongo
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/buger/jsonparser"
 	"github.com/google/uuid"
@@ -226,4 +227,20 @@ func TestIdentifiers(t *testing.T) {
 
 		assert.JSONEq(t, testCase.expected, string(doc.JSON()))
 	}
+}
+
+func TestOptions(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+	doc := NewDocument(
+		[]byte(`{"id": "123"}`),
+		WithInitialIDs("client-id", "g-id"),
+		WithInitialTime(now),
+	)
+
+	firstEntry := doc.History()[0]
+	assert.Equal(t, now.UnixMilli(), firstEntry.Ts)
+	assert.Equal(t, "client-id", firstEntry.Cid)
+	assert.Equal(t, "g-id", firstEntry.Gid)
 }
