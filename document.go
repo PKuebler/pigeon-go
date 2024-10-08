@@ -136,6 +136,31 @@ func (d *Document) History() []Changes {
 	return d.history
 }
 
+func (d *Document) Clone() *Document {
+	clone := &Document{
+		raw:         make([]byte, len(d.raw)),
+		history:     make([]Changes, len(d.history)),
+		stash:       make([]Changes, len(d.stash)),
+		identifiers: make([][]string, len(d.identifiers)),
+		gids:        map[string]int{},
+	}
+
+	copy(clone.raw, d.raw)
+	copy(clone.history, d.history)
+	copy(clone.stash, d.stash)
+
+	for a, b := range d.gids {
+		clone.gids[a] = b
+	}
+
+	for i, identifiers := range d.identifiers {
+		clone.identifiers[i] = make([]string, len(identifiers))
+		copy(clone.identifiers[i], identifiers)
+	}
+
+	return clone
+}
+
 func (d *Document) ApplyChanges(changes Changes) {
 	// reset warning
 	d.Warning = ""
@@ -227,7 +252,11 @@ func (d *Document) RewindChanges(ts int64, cid string) error {
 	return nil
 }
 
-func (d *Document) ReduceHistory(minTs int64) {
+func (d *Document) ReduceHistory(minTs int64) error {
+	if err := d.RewindChanges(minTs, ""); err != nil {
+		return err
+	}
+
 	history := []Changes{
 		{
 			Diff: createInitialDiff(d.raw),
@@ -235,6 +264,10 @@ func (d *Document) ReduceHistory(minTs int64) {
 			Cid:  "0",
 			Gid:  "0",
 		},
+	}
+
+	if err := d.FastForwardChanges(); err != nil {
+		return err
 	}
 
 	for i, change := range d.history {
@@ -253,6 +286,7 @@ func (d *Document) ReduceHistory(minTs int64) {
 	}
 
 	d.history = history
+	return nil
 }
 
 func rawToJSON(value []byte, dataType jsonparser.ValueType) *json.RawMessage {
