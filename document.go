@@ -19,20 +19,12 @@ func WithIdentifiers(identifiers [][]string) DocumentOption {
 
 func WithInitialTime(t time.Time) DocumentOption {
 	return func(d *Document) {
-		if len(d.history) == 0 {
-			return
-		}
-
 		d.history[0].Ts = t.UnixMilli()
 	}
 }
 
 func WithInitialIDs(cid, gid string) DocumentOption {
 	return func(d *Document) {
-		if len(d.history) == 0 {
-			return
-		}
-
 		d.history[0].Cid = cid
 		d.history[0].Gid = gid
 	}
