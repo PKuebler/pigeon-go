@@ -245,44 +245,34 @@ func (d *Document) RewindChanges(ts int64, cid string) error {
 }
 
 func (d *Document) ReduceHistory(minTs int64) error {
-	// only the initial diff
 	if len(d.history) == 1 {
+		// only the initial diff, nothing to reduce
 		return nil
 	}
 
+	// rewind all changes that are newer the minimum timestamp
 	if err := d.RewindChanges(minTs, ""); err != nil {
 		return err
 	}
 
-	history := []Changes{
+	// new first diff is the initial diff
+	newHistory := []Changes{
 		{
 			Diff: createInitialDiff(d.raw),
-			Ts:   0,
-			Cid:  "0",
-			Gid:  "0",
+			Ts:   d.history[len(d.history)-1].Ts,
+			Cid:  d.history[len(d.history)-1].Cid,
+			Gid:  d.history[len(d.history)-1].Gid,
 		},
 	}
 
+	newHistory = append(newHistory, d.stash...)
+
+	// append all newer changes to history
 	if err := d.FastForwardChanges(); err != nil {
 		return err
 	}
 
-	for i, change := range d.history {
-		if i == 0 {
-			// skip init
-			continue
-		}
-
-		if change.Ts >= minTs {
-			history = append(history, change)
-		} else {
-			history[0].Ts = change.Ts
-			history[0].Cid = change.Cid
-			history[0].Gid = change.Gid
-		}
-	}
-
-	d.history = history
+	d.history = newHistory
 	return nil
 }
 
