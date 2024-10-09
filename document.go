@@ -265,9 +265,7 @@ func (d *Document) ReduceHistory(minTs int64) error {
 		},
 	}
 
-	for _, change := range d.stash {
-		newHistory = append(newHistory, change)
-	}
+	newHistory = append(newHistory, d.stash...)
 
 	// append all newer changes to history
 	if err := d.FastForwardChanges(); err != nil {
