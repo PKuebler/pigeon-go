@@ -45,3 +45,7 @@ func main() {
 ```golang
 pigeongo.NewDocument([]byte(`[{ "attrs": { "id": 123 }, "name": "Philipp" }]`), pigeongo.WithCustomIdentifier([][]string{{"id"},{"attrs", "id"}}))
 ```
+
+## Differences to the Javascript version
+
+With Changes it is possible to use a `mid` in addition to the `gid`. For example, it is also possible to transport a Kafka, Redis or network protocol ID.
