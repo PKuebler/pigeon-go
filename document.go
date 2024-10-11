@@ -30,6 +30,12 @@ func WithInitialIDs(cid, gid string) DocumentOption {
 	}
 }
 
+func WithInitialMid(mid string) DocumentOption {
+	return func(d *Document) {
+		d.history[0].Mid = mid
+	}
+}
+
 type Document struct {
 	raw         []byte
 	history     []Changes
@@ -104,6 +110,7 @@ type Changes struct {
 	Cid  string      `json:"cid"`
 	Seq  int         `json:"seq"`
 	Gid  string      `json:"gid"`
+	Mid  string      `json:"mid,omitempty"`
 }
 
 func NewJsonpatchPatch(diff []Operation) jsonpatch.Patch {
@@ -262,6 +269,7 @@ func (d *Document) ReduceHistory(minTs int64) error {
 			Ts:   d.history[len(d.history)-1].Ts,
 			Cid:  d.history[len(d.history)-1].Cid,
 			Gid:  d.history[len(d.history)-1].Gid,
+			Mid:  d.history[len(d.history)-1].Mid,
 		},
 	}
 

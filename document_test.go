@@ -26,6 +26,7 @@ func TestApplyChanges(t *testing.T) {
 		Ts:  2,
 		Cid: "50reifj9hyt",
 		Gid: "dva96nqsdd",
+		Mid: "abcdef",
 	})
 	// add old message
 	doc.ApplyChanges(Changes{
@@ -54,6 +55,7 @@ func TestApplyChanges(t *testing.T) {
 		Ts:  0,
 		Cid: "50reifj9hyt",
 		Gid: "fhs52fqgdd",
+		Mid: "sdfsdf",
 	})
 	doc.ApplyChanges(Changes{
 		Diff: []Operation{
@@ -73,6 +75,8 @@ func TestApplyChanges(t *testing.T) {
 
 	_, err := json.Marshal(doc.History())
 	assert.NoError(t, err)
+
+	assert.Equal(t, "abcdef", doc.History()[2].Mid, doc.History()[2].Gid)
 
 	assert.Nil(t, doc.ReduceHistory(5))
 	assert.Len(t, doc.History(), 2)
@@ -312,12 +316,13 @@ func TestReduceHistory(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now().Add(-1 * time.Hour)
-	doc := NewDocument([]byte(`{"id": "123"}`), WithInitialIDs("client-id", "change-id"), WithInitialTime(now))
+	doc := NewDocument([]byte(`{"id": "123"}`), WithInitialIDs("client-id", "change-id"), WithInitialMid("msg-id"), WithInitialTime(now))
 
 	assert.Nil(t, doc.ReduceHistory(2000))
 	assert.Len(t, doc.History(), 1)
 	assert.Equal(t, "change-id", doc.History()[0].Gid)
 	assert.Equal(t, "client-id", doc.History()[0].Cid)
+	assert.Equal(t, "msg-id", doc.History()[0].Mid)
 
 	doc.ApplyChanges(Changes{
 		Diff: []Operation{
@@ -331,6 +336,7 @@ func TestReduceHistory(t *testing.T) {
 		Ts:  now.Add(10 * time.Second).UnixMilli(),
 		Cid: "50reifj9hyt",
 		Gid: "dva96nqsdd",
+		Mid: "50reifj9hyt-dva96nqsdd",
 	})
 	doc.ApplyChanges(Changes{
 		Diff: []Operation{
@@ -343,22 +349,26 @@ func TestReduceHistory(t *testing.T) {
 		Ts:  now.Add(60 * time.Second).UnixMilli(),
 		Cid: "50reifj9hyt",
 		Gid: "jdva96nqsdd",
+		Mid: "50reifj9hyt-jdva96nqsdd",
 	})
 
 	clone := doc.Clone()
 	assert.Nil(t, clone.ReduceHistory(now.Add(20*time.Second).UnixMilli()))
 	assert.Len(t, clone.History(), 2)
 	assert.Equal(t, "dva96nqsdd", clone.History()[0].Gid)
+	assert.Equal(t, "50reifj9hyt-dva96nqsdd", clone.History()[0].Mid)
 
 	// reduce with only the initial diff
 	clone = doc.Clone()
 	assert.Nil(t, clone.ReduceHistory(now.Add(2*time.Hour).UnixMilli()))
 	assert.Len(t, clone.History(), 1)
 	assert.Equal(t, "jdva96nqsdd", clone.History()[0].Gid)
+	assert.Equal(t, "50reifj9hyt-jdva96nqsdd", clone.History()[0].Mid)
 
 	assert.Nil(t, clone.ReduceHistory(now.Add(4*time.Hour).UnixMilli()))
 	assert.Len(t, clone.History(), 1)
 	assert.Equal(t, "jdva96nqsdd", clone.History()[0].Gid)
+	assert.Equal(t, "50reifj9hyt-jdva96nqsdd", clone.History()[0].Mid)
 
 	// reduce with history, but nothing to reduce
 	clone = doc.Clone()
@@ -366,5 +376,6 @@ func TestReduceHistory(t *testing.T) {
 	assert.Len(t, clone.History(), 3)
 	assert.Equal(t, "change-id", clone.History()[0].Gid)
 	assert.Equal(t, "client-id", clone.History()[0].Cid)
+	assert.Equal(t, "msg-id", clone.History()[0].Mid)
 	assert.Equal(t, now.UnixMilli(), clone.History()[0].Ts)
 }
