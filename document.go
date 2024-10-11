@@ -273,7 +273,10 @@ func (d *Document) ReduceHistory(minTs int64) error {
 		},
 	}
 
-	newHistory = append(newHistory, d.stash...)
+	// reverse append the stash changes
+	for i := len(d.stash) - 1; i >= 0; i-- {
+		newHistory = append(newHistory, d.stash[i])
+	}
 
 	// append all newer changes to history
 	if err := d.FastForwardChanges(); err != nil {
