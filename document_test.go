@@ -379,3 +379,73 @@ func TestReduceHistory(t *testing.T) {
 	assert.Equal(t, "msg-id", clone.History()[0].Mid)
 	assert.Equal(t, now.UnixMilli(), clone.History()[0].Ts)
 }
+
+func TestFastForwardChanges(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+	doc := NewDocument([]byte(`{"id":"card1"}`))
+
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card2"`),
+				Prev:  rawMessage(`"card1"`),
+			},
+		},
+		Ts:  now.Add(10 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "dva96nqsdd",
+	})
+
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card3"`),
+				Prev:  rawMessage(`"card2"`),
+			},
+		},
+		Ts:  now.Add(20 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "gdva96nqsdd",
+	})
+
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card4"`),
+				Prev:  rawMessage(`"card3"`),
+			},
+		},
+		Ts:  now.Add(30 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "hdva96nqsdd",
+	})
+
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card16"`),
+				Prev:  rawMessage(`"card1"`),
+			},
+		},
+		Ts:  now.UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "udva96nqsdd",
+	})
+
+	ids := []string{}
+	for _, change := range doc.History() {
+		ids = append(ids, change.Gid)
+	}
+	assert.Equal(t, []string{"0", "udva96nqsdd", "dva96nqsdd", "gdva96nqsdd", "hdva96nqsdd"}, ids)
+	assert.Equal(t, `{"id":"card4"}`, string(doc.JSON()))
+}

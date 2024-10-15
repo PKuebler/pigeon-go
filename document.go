@@ -207,7 +207,8 @@ func (d *Document) ApplyChanges(changes Changes) {
 
 func (d *Document) FastForwardChanges() error {
 	var err error
-	for _, change := range d.stash {
+	for i := len(d.stash) - 1; i >= 0; i-- {
+		change := d.stash[i]
 		d.raw, err = patch(d.raw, change.Diff, d.identifiers)
 		if err != nil {
 			return err
