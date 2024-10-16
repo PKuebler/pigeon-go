@@ -177,7 +177,6 @@ func (d *Document) ApplyChanges(changes Changes) {
 	// remove external _prev from changes
 	// set prev value
 	for i := range changes.Diff {
-		changes.Diff[i].Prev = nil
 		changes.Diff[i].Prev = d.getValue(changes.Diff[i].Path)
 	}
 
@@ -329,7 +328,10 @@ func (d *Document) getValue(path string) *json.RawMessage {
 		return nil
 	}
 
-	jsonpatchPath := replacePath(d.raw, path, d.identifiers)
+	jsonpatchPath, err := replacePath(d.raw, path, d.identifiers)
+	if err != nil {
+		return nil
+	}
 
 	jsonparserPath := []string{}
 
