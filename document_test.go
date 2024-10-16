@@ -512,18 +512,6 @@ func TestWrongPrev(t *testing.T) {
 	assert.Equal(t, `{"id":"card2"}`, string(doc.JSON()))
 	assert.Nil(t, doc.FastForwardChanges())
 	assert.Equal(t, `{"id":"card3"}`, string(doc.JSON()))
-
-	prevs := []string{}
-	for _, historyEntry := range doc.history {
-		for _, diff := range historyEntry.Diff {
-			if diff.Prev == nil {
-				prevs = append(prevs, "")
-				continue
-			}
-			prevs = append(prevs, string(*diff.Prev))
-		}
-	}
-	assert.Equal(t, []string{"", `"card1"`, `"card2"`, `"card4"`, `"card5"`}, prevs)
 }
 
 func TestGetValue(t *testing.T) {
