@@ -3,6 +3,8 @@ package pigeongo
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -172,6 +174,13 @@ func (d *Document) ApplyChanges(changes Changes) {
 		d.Warning = fmt.Sprintf("rewind error: %s", err.Error())
 	}
 
+	// remove external _prev from changes
+	// set prev value
+	for i := range changes.Diff {
+		changes.Diff[i].Prev = nil
+		changes.Diff[i].Prev = d.getValue(changes.Diff[i].Path)
+	}
+
 	var err error
 	d.raw, err = patch(d.raw, changes.Diff, d.identifiers)
 	if err != nil {
@@ -313,4 +322,39 @@ func rawToJSON(value []byte, dataType jsonparser.ValueType) *json.RawMessage {
 func rawMessage(s string) *json.RawMessage {
 	raw := json.RawMessage([]byte(s))
 	return &raw
+}
+
+func (d *Document) getValue(path string) *json.RawMessage {
+	if d.raw == nil {
+		return nil
+	}
+
+	jsonpatchPath := replacePath(d.raw, path, d.identifiers)
+
+	jsonparserPath := []string{}
+
+	pathParts := strings.Split(jsonpatchPath, "/")
+	if len(pathParts) < 2 || pathParts[0] != "" {
+		return nil
+	}
+
+	for _, part := range pathParts {
+		if part == "" {
+			continue
+		}
+
+		if _, err := strconv.Atoi(part); err == nil {
+			jsonparserPath = append(jsonparserPath, fmt.Sprintf(`[%s]`, part))
+			continue
+		}
+
+		jsonparserPath = append(jsonparserPath, part)
+	}
+
+	value, dataType, _, err := jsonparser.Get(d.raw, jsonparserPath...)
+	if err != nil {
+		return nil
+	}
+
+	return rawToJSON(value, dataType)
 }

@@ -449,3 +449,93 @@ func TestFastForwardChanges(t *testing.T) {
 	assert.Equal(t, []string{"0", "udva96nqsdd", "dva96nqsdd", "gdva96nqsdd", "hdva96nqsdd"}, ids)
 	assert.Equal(t, `{"id":"card4"}`, string(doc.JSON()))
 }
+
+func TestWrongPrev(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+	doc := NewDocument([]byte(`{"id":"card1"}`))
+
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card2"`),
+				Prev:  rawMessage(`"baa"`),
+			},
+		},
+		Ts:  now.Add(10 * time.Minute).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "dva96nqsdd",
+	})
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card3"`),
+				Prev:  rawMessage(`"foo"`),
+			},
+		},
+		Ts:  now.Add(20 * time.Minute).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "gdva96nqsdd",
+	})
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card4"`),
+				Prev:  rawMessage(`"other value"`),
+			},
+		},
+		Ts:  now.Add(15 * time.Minute).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "hdva96nqsdd",
+	})
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/id",
+				Value: rawMessage(`"card5"`),
+				Prev:  rawMessage(`"oh"`),
+			},
+		},
+		Ts:  now.Add(18 * time.Minute).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "ba96nqsdd",
+	})
+	assert.Nil(t, doc.RewindChanges(now.Add(16*time.Minute).UnixMilli(), ""))
+	assert.Equal(t, `{"id":"card2"}`, string(doc.JSON()))
+	assert.Nil(t, doc.FastForwardChanges())
+	assert.Equal(t, `{"id":"card3"}`, string(doc.JSON()))
+
+	prevs := []string{}
+	for _, historyEntry := range doc.history {
+		for _, diff := range historyEntry.Diff {
+			if diff.Prev == nil {
+				prevs = append(prevs, "")
+				continue
+			}
+			prevs = append(prevs, string(*diff.Prev))
+		}
+	}
+	assert.Equal(t, []string{"", `"card1"`, `"card2"`, `"card4"`, `"card5"`}, prevs)
+}
+
+func TestGetValue(t *testing.T) {
+	t.Parallel()
+
+	doc := NewDocument([]byte(`{"id":"card1", "number": 1234, "boolean": true, "object": {"foo": "bar"},  "array": ["one", "two"], "complex": [{"id":"1234","foo":"baa"}]}`))
+
+	assert.Equal(t, `"card1"`, string(*doc.getValue("/id")))
+	assert.Equal(t, `1234`, string(*doc.getValue("/number")))
+	assert.Equal(t, `true`, string(*doc.getValue("/boolean")))
+	assert.Equal(t, `{"foo": "bar"}`, string(*doc.getValue("/object")))
+	assert.Equal(t, `["one", "two"]`, string(*doc.getValue("/array")))
+	assert.Equal(t, `"bar"`, string(*doc.getValue("/object/foo")))
+	assert.Equal(t, `"baa"`, string(*doc.getValue("/complex/[1234]/foo")))
+}
