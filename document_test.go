@@ -514,6 +514,27 @@ func TestWrongPrev(t *testing.T) {
 	assert.Equal(t, `{"id":"card3"}`, string(doc.JSON()))
 }
 
+func TestRemove(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+	doc := NewDocument([]byte(`{"cards":[{"id":"card1"}]}`))
+	doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:   "remove",
+				Path: "/cards/[card132]",
+			},
+		},
+		Ts:  now.Add(5 * time.Minute).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "dva96nqsdd",
+	})
+
+	assert.Len(t, doc.history, 2)
+	assert.Equal(t, "patch error: id `card132` not found", doc.Warning)
+}
+
 func TestGetValue(t *testing.T) {
 	t.Parallel()
 

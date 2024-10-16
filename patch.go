@@ -1,6 +1,7 @@
 package pigeongo
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,7 +15,10 @@ func patch(doc []byte, operations []Operation, identifiers [][]string) ([]byte, 
 
 	for _, operation := range operations {
 		patchObj := NewJsonpatchPatch([]Operation{operation})
-		patchObj = replacePaths(newDoc, patchObj, identifiers)
+		patchObj, err = replacePaths(newDoc, patchObj, identifiers)
+		if err != nil {
+			return doc, err
+		}
 
 		newDoc, err = patchObj.Apply(newDoc)
 		if err != nil {
@@ -25,7 +29,7 @@ func patch(doc []byte, operations []Operation, identifiers [][]string) ([]byte, 
 	return newDoc, nil
 }
 
-func replacePaths(doc []byte, patchObj jsonpatch.Patch, identifiers [][]string) jsonpatch.Patch {
+func replacePaths(doc []byte, patchObj jsonpatch.Patch, identifiers [][]string) (jsonpatch.Patch, error) {
 	for _, patch := range patchObj {
 		path, errPath := patch.Path()
 		from, errFrom := patch.From()
@@ -34,20 +38,26 @@ func replacePaths(doc []byte, patchObj jsonpatch.Patch, identifiers [][]string) 
 		}
 
 		if path != "" {
-			path = replacePath(doc, path, identifiers)
+			path, err := replacePath(doc, path, identifiers)
+			if err != nil {
+				return nil, err
+			}
 			patch["path"] = rawMessage(fmt.Sprintf("\"%s\"", path))
 		}
 
 		if from != "" {
-			from = replacePath(doc, from, identifiers)
+			from, err := replacePath(doc, from, identifiers)
+			if err != nil {
+				return nil, err
+			}
 			patch["from"] = rawMessage(fmt.Sprintf("\"%s\"", from))
 		}
 	}
 
-	return patchObj
+	return patchObj, nil
 }
 
-func replacePath(doc []byte, path string, identifiers [][]string) string {
+func replacePath(doc []byte, path string, identifiers [][]string) (string, error) {
 	parts := strings.Split(path, "/")
 	newParts := make([]string, len(parts))
 	keys := []string{}
@@ -61,6 +71,7 @@ func replacePath(doc []byte, path string, identifiers [][]string) string {
 		if strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]") {
 			searchID := strings.TrimSuffix(strings.TrimPrefix(part, "["), "]")
 			childPosition := 0
+			found := false
 			if _, err := jsonparser.ArrayEach(doc, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 				if err != nil {
 					panic(err)
@@ -69,6 +80,7 @@ func replacePath(doc []byte, path string, identifiers [][]string) string {
 				if findID(value, identifiers) == searchID {
 					keys = append(keys, fmt.Sprintf("[%d]", childPosition))
 					newParts[partIndex] = fmt.Sprintf("%d", childPosition)
+					found = true
 				}
 
 				childPosition++
@@ -76,11 +88,15 @@ func replacePath(doc []byte, path string, identifiers [][]string) string {
 				keys = append(keys, part)
 				newParts[partIndex] = part
 			}
+
+			if !found {
+				return "", errors.New("id `" + searchID + "` not found")
+			}
 		} else {
 			keys = append(keys, part)
 			newParts[partIndex] = part
 		}
 	}
 
-	return strings.Join(newParts, "/")
+	return strings.Join(newParts, "/"), nil
 }
