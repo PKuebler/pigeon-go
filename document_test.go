@@ -2,6 +2,7 @@ package pigeongo
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -547,4 +548,35 @@ func TestGetValue(t *testing.T) {
 	assert.Equal(t, `["one", "two"]`, string(*doc.getValue("/array")))
 	assert.Equal(t, `"bar"`, string(*doc.getValue("/object/foo")))
 	assert.Equal(t, `"baa"`, string(*doc.getValue("/complex/[1234]/foo")))
+}
+
+func TestDiff(t *testing.T) {
+	rawA := []byte(`{"id":"card1", "number": 5678, "stringarray": ["one", "four", "two"], "objectarray": [{"id":"1234","value":"car"},{"id":"4734","value":"people"}], "deepobject":{"id":"1423","text":"foo","childs":[{"id":"64334","value":"baa"}]}}`)
+	rawB := []byte(`{"id":"card1", "number": 1234, "stringarray": ["four", "one", "three"], "objectarray": [{"id":"1234","value":"radio"},{"id":"5321","value":"home"},{"id":"4734","value":"people"}], "deepobject":{"id":"1423","text":"foo","childs":[{"id":"64334","value":"foo"}]},"boolean":true,"object":{"foo":"bar"},"array":["one","two"],"complex":[{"id":"1234","foo":"baa"}]}`)
+	docA := NewDocument(rawA)
+	docB := NewDocument(rawB)
+
+	changes, err := docA.Diff(docB)
+	changes.Ts = time.Now().UnixMilli()
+	changes.Cid = "50reifj9hyt"
+	changes.Gid = "dva96nqsdd"
+	assert.Nil(t, err)
+
+	docA.ApplyChanges(changes)
+	assert.Equal(t, "", docA.Warning)
+
+	assert.Equal(t, string(sortKeys(rawB)), string(sortKeys(docA.JSON())))
+
+	b, _ := json.MarshalIndent(changes, "", "  ")
+	fmt.Println(string(b))
+
+	t.Error("oh")
+}
+
+// sortKeys for the assert functions
+func sortKeys(doc []byte) []byte {
+	obj := map[string]interface{}{}
+	json.Unmarshal(doc, &obj)
+	sorted, _ := json.Marshal(obj)
+	return sorted
 }
