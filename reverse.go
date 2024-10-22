@@ -20,6 +20,12 @@ func reverse(operations []Operation, identifiers [][]string) []Operation {
 			}
 		case "remove":
 			operation.Op = "add"
+
+			parts := strings.Split(operation.Path, "/")
+			if strings.HasPrefix(parts[len(parts)-1], "[") && strings.HasSuffix(parts[len(parts)-1], "]") {
+				parts[len(parts)-1] = "0"
+			}
+			operation.Path = strings.Join(parts, "/")
 		}
 
 		// switch value and prev
