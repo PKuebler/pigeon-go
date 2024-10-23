@@ -65,6 +65,18 @@ func TestReverse(t *testing.T) {
 			}},
 		},
 		{
+			operations: []Operation{{
+				Op:   "remove",
+				Path: "/cards/[345]",
+				Prev: rawMessage(`{"id": 345, "name": "card2", "value": 2}`),
+			}},
+			expected: []Operation{{
+				Op:    "add",
+				Path:  "/cards/0",
+				Value: rawMessage(`{"id": 345, "name": "card2", "value": 2}`),
+			}},
+		},
+		{
 			operations: []Operation{
 				{
 					Op:    "replace",
