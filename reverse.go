@@ -1,6 +1,9 @@
 package pigeongo
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 func reverse(operations []Operation, identifiers [][]string) []Operation {
 	reversedOperations := make([]Operation, len(operations))
@@ -12,11 +15,17 @@ func reverse(operations []Operation, identifiers [][]string) []Operation {
 		switch operation.Op {
 		case "add":
 			operation.Op = "remove"
+
+			// if value is a object
 			id := findID(*operation.Value, identifiers)
 			if id != "" {
 				parts := strings.Split(operation.Path, "/")
-				parts[len(parts)-1] = "[" + id + "]"
-				operation.Path = strings.Join(parts, "/")
+				// if last part is an index position
+				if _, err := strconv.Atoi(parts[len(parts)-1]); err == nil {
+					// replace /array/0 with /array/[objId]
+					parts[len(parts)-1] = "[" + id + "]"
+					operation.Path = strings.Join(parts, "/")
+				}
 			}
 		case "remove":
 			operation.Op = "add"
