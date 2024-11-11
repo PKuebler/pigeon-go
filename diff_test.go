@@ -136,3 +136,15 @@ func TestComparePrimitiveSlices(t *testing.T) {
 		}
 	}
 }
+
+func TestDiffWithBadPayloads(t *testing.T) {
+	t.Parallel()
+
+	ops, err := diff([]byte("bad"), []byte("[]"), [][]string{})
+	assert.Nil(t, ops)
+	assert.Error(t, err)
+
+	ops, err = diff([]byte("[]"), []byte("bad"), [][]string{})
+	assert.Nil(t, ops)
+	assert.Error(t, err)
+}

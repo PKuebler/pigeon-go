@@ -49,6 +49,36 @@ const testCases = [
     },
     {
         oldDocument: {
+            id: '0',
+            name: null,
+        },
+        newDocument: {
+            id: '0',
+            name: null,
+        }
+    },
+    {
+        oldDocument: {
+            id: '0',
+            name: 1234,
+        },
+        newDocument: {
+            id: '0',
+            name: "Name",
+        }
+    },
+    {
+        oldDocument: {
+            id: 135,
+            name: 1234,
+        },
+        newDocument: {
+            id: 135,
+            name: "Name",
+        }
+    },
+    {
+        oldDocument: {
             channel: {
                 id: '2',
                 name: 'Test Channel',
