@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
+	"strings"
 )
 
-func diff(left, right []byte, identifier [][]string) ([]Operation, error) {
+func diff(left, right []byte, identifiers [][]string) ([]Operation, error) {
 	var l interface{}
 	var r interface{}
 
@@ -19,17 +21,17 @@ func diff(left, right []byte, identifier [][]string) ([]Operation, error) {
 		return nil, err
 	}
 
-	ops := compare([]Operation{}, "", l, r)
+	ops := compare([]Operation{}, "", l, r, identifiers)
 	return ops, nil
 }
 
-func compare(ops []Operation, path string, left, right interface{}) []Operation {
-	// Wenn beide nil sind, gibt es keine Änderung
+func compare(ops []Operation, path string, left, right interface{}, identifiers [][]string) []Operation {
+	// if left and right nil, no changes
 	if left == nil && right == nil {
 		return nil
 	}
 
-	// Wenn eines nil ist, gibt es eine Änderung
+	// if only one of them is nil, it is a add or remove
 	if left == nil || right == nil {
 		return append(ops, newChange(path, left, right))
 	}
@@ -37,20 +39,20 @@ func compare(ops []Operation, path string, left, right interface{}) []Operation 
 	leftKind := reflect.TypeOf(left).Kind()
 	rightKind := reflect.TypeOf(right).Kind()
 
-	// Unterschiedliche Typen - das ist eine Änderung
+	// type mismatch is a change
 	if leftKind != rightKind {
 		return append(ops, newChange(path, left, right))
 	}
 
 	switch leftKind {
 	case reflect.Map:
-		// Beide sind Maps, vergleichen wir die Keys
-		return compareMaps(ops, path, left.(map[string]interface{}), right.(map[string]interface{}))
+		// compare object keys
+		return compareMaps(ops, path, left.(map[string]interface{}), right.(map[string]interface{}), identifiers)
 	case reflect.Slice:
-		// Beide sind Arrays, vergleichen wir die Elemente
-		return compareSlices(ops, path, left.([]interface{}), right.([]interface{}))
+		// compare array values
+		return compareSlices(ops, path, left.([]interface{}), right.([]interface{}), identifiers)
 	default:
-		// Primitive Werte vergleichen
+		// compare primitive values
 		if !reflect.DeepEqual(left, right) {
 			return append(ops, newChange(path, left, right))
 		}
@@ -59,23 +61,38 @@ func compare(ops []Operation, path string, left, right interface{}) []Operation 
 	return ops
 }
 
-func compareMaps(ops []Operation, path string, left, right map[string]interface{}) []Operation {
-	// Iteriere über das linke Objekt
-	for key, leftVal := range left {
+func compareMaps(ops []Operation, path string, left, right map[string]interface{}, identifiers [][]string) []Operation {
+	// sort keys cosmetically only, as PigeonJS uses an alphabetical order.
+	leftKeys := make([]string, 0, len(left))
+	for key := range left {
+		leftKeys = append(leftKeys, key)
+	}
+	sort.SliceStable(leftKeys, func(i int, j int) bool { return leftKeys[i] < leftKeys[j] })
+
+	rightKeys := make([]string, 0, len(right))
+	for key := range right {
+		rightKeys = append(rightKeys, key)
+	}
+	sort.SliceStable(rightKeys, func(i int, j int) bool { return rightKeys[i] < rightKeys[j] })
+
+	// iterates over the left object
+	for _, key := range leftKeys {
+		leftVal := left[key]
 		rightVal, exists := right[key]
 		newPath := path + "/" + key
 		if exists {
-			// Vergleiche die Werte, wenn der Key in beiden Objekten existiert
-			ops = compare(ops, newPath, leftVal, rightVal)
+			// compare values if the key exists in both objects
+			ops = compare(ops, newPath, leftVal, rightVal, identifiers)
 		} else {
-			// Key existiert nur im linken Objekt (gelöscht im rechten)
+			// key exists in the left object but not in the right one (removed to the right)
 			ops = append(ops, newChange(newPath, leftVal, nil))
 		}
 	}
 
-	// Iteriere über das rechte Objekt, um Keys zu finden, die nur im rechten Objekt existieren
-	for key, rightVal := range right {
+	// iterates over the right object, looking for keys that only exist in the right object
+	for _, key := range rightKeys {
 		if _, exists := left[key]; !exists {
+			rightVal := right[key]
 			newPath := path + "/" + key
 			ops = append(ops, newChange(newPath, nil, rightVal))
 		}
@@ -84,86 +101,169 @@ func compareMaps(ops []Operation, path string, left, right map[string]interface{
 	return ops
 }
 
-func compareSlices(ops []Operation, path string, left, right []interface{}) []Operation {
-	maxLen := len(left)
-	if len(right) > maxLen {
-		maxLen = len(right)
+func isSlicePrimitive(slice []interface{}) bool {
+	for _, item := range slice {
+		switch item.(type) {
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, string, bool:
+		default:
+			return false
+		}
 	}
 
-	rightIndexMap := map[string]int{}
-	for index, rightVal := range right {
-		obj, ok := rightVal.(map[string]interface{})
-		if !ok {
-			continue
-		}
+	return true
+}
 
-		id := getID(obj)
-		if id != "" {
-			rightIndexMap[id] = index
+func comparePrimitiveSlices(ops []Operation, path string, left, right []interface{}) []Operation {
+	if !isSlicePrimitive(right) || len(left) != len(right) {
+		// replace all
+		ops = append(ops, newChange(path, left, right))
+		return ops
+	}
+
+	// compare values
+	for i, val := range left {
+		if val != right[i] {
+			// stop an replace all
+			ops = append(ops, newChange(path, left, right))
+			return ops
+		}
+	}
+
+	return ops
+}
+
+func compareSlices(ops []Operation, path string, left, right []interface{}, identifiers [][]string) []Operation {
+	// is slice primitive, use only replace all operations
+	if isSlicePrimitive(left) {
+		ops = comparePrimitiveSlices(ops, path, left, right)
+		return ops
+	}
+
+	// to compare id's we need to find the index of the object in the right slice by its id.
+	rightIDIndexMap := map[string]int{}
+	for index, rightVal := range right {
+		switch value := rightVal.(type) {
+		case map[string]interface{}:
+			id := getID(value, identifiers)
+			if id != "" {
+				rightIDIndexMap[id] = index
+			}
+		default:
+			continue
 		}
 	}
 
 	handledRight := map[int]bool{}
 	for leftIndex, leftVal := range left {
-		id := getID(leftVal)
-		if rightIndex, exists := rightIndexMap[id]; exists {
-			if leftIndex != rightIndex {
-				oldPath := path + "/" + getArrayItemID(leftVal, right[rightIndex], leftIndex)
-				newPath := fmt.Sprintf("%s/%d", path, rightIndex)
-				ops = append(ops, addMove(oldPath, newPath))
+		switch leftVal.(type) {
+		case map[string]interface{}:
+			id := getID(leftVal, identifiers)
+			if rightIndex, exists := rightIDIndexMap[id]; exists {
+				// moved?
+				if leftIndex != rightIndex {
+					oldPath := path + "/" + getArrayItemID(leftVal, right[rightIndex], leftIndex, identifiers)
+					newPath := fmt.Sprintf("%s/%d", path, rightIndex)
+					ops = append(ops, addMove(oldPath, newPath))
+				}
+				handledRight[rightIndex] = true
+				newPath := path + "/" + getArrayItemID(leftVal, right[rightIndex], leftIndex, identifiers)
+				ops = compare(ops, newPath, leftVal, right[rightIndex], identifiers)
+			} else {
+				// remove
+				newPath := path + "/" + getArrayItemID(leftVal, nil, leftIndex, identifiers)
+				ops = compare(ops, newPath, leftVal, nil, identifiers)
 			}
-			handledRight[rightIndex] = true
-			newPath := path + "/" + getArrayItemID(leftVal, right[rightIndex], leftIndex)
-			ops = compare(ops, newPath, leftVal, right[rightIndex])
-		} else {
-			newPath := path + "/" + getArrayItemID(leftVal, nil, leftIndex)
-			ops = compare(ops, newPath, leftVal, nil)
 		}
 	}
 
-	adds := []Operation{}
 	for rightIndex, rightVal := range right {
 		if _, handled := handledRight[rightIndex]; !handled {
 			newPath := fmt.Sprintf("%s/%d", path, rightIndex)
-			adds = compare(adds, newPath, nil, rightVal)
+			switch rightVal.(type) {
+			case map[string]interface{}:
+				op := newChange(newPath, nil, rightVal)
+
+				// support add before id like `/array/[id]`
+				if rightIndex < len(right)-1 {
+					nextID := getID(right[rightIndex+1], identifiers)
+					// use the id at the path, if it exists
+					if nextID != "" {
+						if _, handledNextID := handledRight[rightIndex+1]; handledNextID {
+							pathParts := strings.Split(newPath, "/")
+							op.Path = fmt.Sprintf("%s/%s", strings.Join(pathParts[:len(pathParts)-1], "/"), nextID)
+						}
+					}
+				}
+
+				ops = append(ops, op)
+			}
 		}
 	}
-
-	ops = append(adds, ops...)
 
 	return ops
 }
 
-func getID(value interface{}) string {
+func getID(value interface{}, identifiers [][]string) string {
 	if m, ok := value.(map[string]interface{}); ok {
-		if id, exists := m["id"]; exists {
-			return formatID(id)
+		for _, identifier := range identifiers {
+			layer := m
+			for i, key := range identifier {
+				value, exists := layer[key]
+				if !exists {
+					break
+				}
+
+				// last element
+				if i == len(identifier)-1 {
+					switch v := value.(type) {
+					case float64:
+						// is a int?
+						if v == float64(int64(v)) {
+							return formatID(fmt.Sprintf("%d", int64(v)))
+						}
+						return formatID(fmt.Sprintf("%f", v))
+					case string:
+						return formatID(v)
+					default:
+						return ""
+					}
+				}
+
+				if m2, ok := value.(map[string]interface{}); !ok {
+					// child is not a object
+					break
+				} else {
+					layer = m2
+				}
+			}
 		}
 	}
 	return ""
 }
 
-// Funktion zum Ermitteln der ID eines Array-Elements
-func getArrayItemID(left, right interface{}, index int) string {
-	// Überprüfen, ob das linke Element eine ID hat
+// getArrayItemID returns the ID of an array item.
+func getArrayItemID(left, right interface{}, index int, identifiers [][]string) string {
+	// check if the left object has an ID.
 	if leftMap, ok := left.(map[string]interface{}); ok {
-		if id, exists := leftMap["id"]; exists {
-			return formatID(id)
+		id := getID(leftMap, identifiers)
+		if id != "" {
+			return id
 		}
 	}
 
-	// Überprüfen, ob das rechte Element eine ID hat
+	// check if the right object has an ID.
 	if rightMap, ok := right.(map[string]interface{}); ok {
-		if id, exists := rightMap["id"]; exists {
-			return formatID(id)
+		id := getID(rightMap, identifiers)
+		if id != "" {
+			return id
 		}
 	}
 
-	// Wenn keine ID vorhanden ist, den Index verwenden
+	// use the index as ID.
 	return strconv.Itoa(index)
 }
 
-// Hilfsfunktion zum Formatieren der ID (mit eckigen Klammern)
+// formatID formats an ID to a string with [<id>].
 func formatID(id interface{}) string {
 	switch v := id.(type) {
 	case string:

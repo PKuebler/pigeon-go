@@ -54,6 +54,18 @@ func TestPatch(t *testing.T) {
 			wantError: false,
 		},
 		{
+			doc:       []byte(`["one", "two", "three"]`),
+			patch:     []byte(`[{"op":"add","path":"/1","value":"four"}]`),
+			want:      []byte(`["one", "four", "two", "three"]`),
+			wantError: false,
+		},
+		{
+			doc:       []byte(`["one", "four", "two", "three"]`),
+			patch:     []byte(`[{"op":"remove","path":"/1"}]`),
+			want:      []byte(`["one", "two", "three"]`),
+			wantError: false,
+		},
+		{
 			doc:       []byte(`[{"id":"def"},{"id":"abc"},{"id":"ghi"}]`),
 			patch:     []byte(`[{"op":"move","from":"/[abc]","path":"/0"}]`),
 			want:      []byte(`[{"id":"abc"},{"id":"def"},{"id":"ghi"}]`),
@@ -138,8 +150,10 @@ func TestPatch(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		fmt.Println(i, ">", string(testCase.patch))
 		operations := []Operation{}
+
+		fmt.Println("")
+		fmt.Println("# TESTCASE", i)
 
 		err := json.Unmarshal(testCase.patch, &operations)
 		assert.NoError(t, err, fmt.Sprintf("test %d", i))
@@ -174,5 +188,60 @@ func BenchmarkPatch(b *testing.B) {
 		if string(result) != `{"count":2}` {
 			b.Fatal("result is not expected")
 		}
+	}
+}
+
+func TestFixEndOfArrayPaths(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		doc          []byte
+		path         string
+		expectedPath string
+	}{
+		{
+			doc:          []byte(`["a","b","c"]`),
+			path:         "/3",
+			expectedPath: "/-",
+		},
+		{
+			doc:          []byte(`["a"]`),
+			path:         "/1",
+			expectedPath: "/-",
+		},
+		{
+			doc:          []byte(`{"array":["a","b","c"]}`),
+			path:         "/array/3",
+			expectedPath: "/array/-",
+		},
+		{
+			doc:          []byte(`{"array":["a","b","c"]}`),
+			path:         "/array/2",
+			expectedPath: "/array/2",
+		},
+		{
+			doc:          []byte(`{"object":{"1":"def"}}`),
+			path:         "/object/1",
+			expectedPath: "/object/1",
+		},
+		{
+			doc:          []byte(`{"array":[{"id":"def"},{"id":"abc"},{"id":"ghj"}]}`),
+			path:         "/array/1",
+			expectedPath: "/array/1",
+		},
+		{
+			doc:          []byte(`{"array":[{"id":"def"},{"id":"abc"},{"id":"ghj"}]}`),
+			path:         "/array/3",
+			expectedPath: "/array/-",
+		},
+	}
+
+	for i, testCase := range testCases {
+		patchObj := NewJsonpatchPatch([]Operation{{Op: "add", Path: testCase.path}})
+		patchObj = fixEndOfArrayPaths(testCase.doc, patchObj)
+
+		path, err := patchObj[0].Path()
+		assert.Nil(t, err)
+		assert.Equal(t, testCase.expectedPath, path, "Test case %d failed", i)
 	}
 }
