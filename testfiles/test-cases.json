@@ -1,0 +1,1568 @@
+[
+    {
+        "oldDocument": {
+            "id": "0",
+            "name": "Test"
+        },
+        "newDocument": {
+            "id": "0",
+            "name": "Foo"
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/name",
+                    "value": "Foo",
+                    "_prev": "Test"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764430,
+            "seq": 1,
+            "gid": "5x583usv82i"
+        },
+        "result": {
+            "id": "0",
+            "name": "Foo"
+        },
+        "name": "testcase 0"
+    },
+    {
+        "oldDocument": {
+            "id": "0",
+            "name": "Test"
+        },
+        "newDocument": {
+            "id": "1",
+            "name": "Test"
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/id",
+                    "value": "1",
+                    "_prev": "0"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 3,
+            "gid": "wos44zhqfb7"
+        },
+        "result": {
+            "id": "1",
+            "name": "Test"
+        },
+        "name": "testcase 1"
+    },
+    {
+        "oldDocument": {
+            "id": "0",
+            "name": "Test"
+        },
+        "newDocument": {
+            "id": "0"
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "remove",
+                    "path": "/name",
+                    "_prev": "Test"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 5,
+            "gid": "br9h0r10mh5"
+        },
+        "result": {
+            "id": "0"
+        },
+        "name": "testcase 2"
+    },
+    {
+        "oldDocument": {
+            "id": "0"
+        },
+        "newDocument": {
+            "id": "0",
+            "name": "Test"
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "add",
+                    "path": "/name",
+                    "value": "Test"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 7,
+            "gid": "epj8fc6zru7"
+        },
+        "result": {
+            "id": "0",
+            "name": "Test"
+        },
+        "name": "testcase 3"
+    },
+    {
+        "oldDocument": {
+            "id": "0",
+            "name": null
+        },
+        "newDocument": {
+            "id": "0",
+            "name": null
+        },
+        "changes": {
+            "diff": [],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 9,
+            "gid": "x6xste15vf"
+        },
+        "result": {
+            "id": "0",
+            "name": null
+        },
+        "name": "testcase 4"
+    },
+    {
+        "oldDocument": {
+            "id": "0",
+            "name": 1234
+        },
+        "newDocument": {
+            "id": "0",
+            "name": "Name"
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/name",
+                    "value": "Name",
+                    "_prev": 1234
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 11,
+            "gid": "dudqai4le9"
+        },
+        "result": {
+            "id": "0",
+            "name": "Name"
+        },
+        "name": "testcase 5"
+    },
+    {
+        "oldDocument": {
+            "id": 135,
+            "name": 1234
+        },
+        "newDocument": {
+            "id": 135,
+            "name": "Name"
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/name",
+                    "value": "Name",
+                    "_prev": 1234
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 13,
+            "gid": "pzeiu0bf3l"
+        },
+        "result": {
+            "id": 135,
+            "name": "Name"
+        },
+        "name": "testcase 6"
+    },
+    {
+        "oldDocument": {
+            "id": "0",
+            "array": [
+                [
+                    "abc"
+                ]
+            ]
+        },
+        "newDocument": {
+            "id": "0",
+            "array": [
+                [
+                    "abc",
+                    "def"
+                ]
+            ]
+        },
+        "changes": {
+            "diff": [],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 15,
+            "gid": "4fn922vs20y"
+        },
+        "result": {
+            "id": "0",
+            "array": [
+                [
+                    "abc"
+                ]
+            ]
+        },
+        "name": "testcase 7"
+    },
+    {
+        "oldDocument": {
+            "channel": {
+                "id": "2",
+                "name": "Test Channel",
+                "subchannel": {
+                    "id": "3",
+                    "name": "Test Subchannel"
+                }
+            }
+        },
+        "newDocument": {
+            "channel": {
+                "id": "2",
+                "name": "Test Channel",
+                "subchannel": {
+                    "id": "0",
+                    "name": "No Channel"
+                }
+            }
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/channel/subchannel/id",
+                    "value": "0",
+                    "_prev": "3"
+                },
+                {
+                    "op": "replace",
+                    "path": "/channel/subchannel/name",
+                    "value": "No Channel",
+                    "_prev": "Test Subchannel"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 17,
+            "gid": "ou4877d2kz"
+        },
+        "result": {
+            "channel": {
+                "id": "2",
+                "name": "Test Channel",
+                "subchannel": {
+                    "id": "0",
+                    "name": "No Channel"
+                }
+            }
+        },
+        "name": "testcase 8"
+    },
+    {
+        "oldDocument": {
+            "channel": {
+                "id": "2",
+                "name": "Test Channel",
+                "subchannel": {}
+            }
+        },
+        "newDocument": {
+            "channel": {
+                "id": "2",
+                "name": "Test Channel",
+                "subchannel": {
+                    "id": "0",
+                    "name": "No Channel"
+                }
+            }
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "add",
+                    "path": "/channel/subchannel/id",
+                    "value": "0"
+                },
+                {
+                    "op": "add",
+                    "path": "/channel/subchannel/name",
+                    "value": "No Channel"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 19,
+            "gid": "k7cjugjxk9n"
+        },
+        "result": {
+            "channel": {
+                "id": "2",
+                "name": "Test Channel",
+                "subchannel": {
+                    "id": "0",
+                    "name": "No Channel"
+                }
+            }
+        },
+        "name": "testcase 9"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                0,
+                10,
+                20,
+                30,
+                40
+            ]
+        },
+        "newDocument": {
+            "array": [
+                0,
+                10,
+                20
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/array",
+                    "value": [
+                        0,
+                        10,
+                        20
+                    ],
+                    "_prev": [
+                        0,
+                        10,
+                        20,
+                        30,
+                        40
+                    ]
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 21,
+            "gid": "0vq2ffuadlj9"
+        },
+        "result": {
+            "array": [
+                0,
+                10,
+                20
+            ]
+        },
+        "name": "testcase 10"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                0,
+                10,
+                20,
+                30,
+                40
+            ]
+        },
+        "newDocument": {
+            "array": [
+                0,
+                30,
+                40,
+                10
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/array",
+                    "value": [
+                        0,
+                        30,
+                        40,
+                        10
+                    ],
+                    "_prev": [
+                        0,
+                        10,
+                        20,
+                        30,
+                        40
+                    ]
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 23,
+            "gid": "pjaxpv82pwa"
+        },
+        "result": {
+            "array": [
+                0,
+                30,
+                40,
+                10
+            ]
+        },
+        "name": "testcase 11"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                0,
+                10,
+                20,
+                30,
+                40
+            ]
+        },
+        "newDocument": {
+            "array": [
+                0,
+                10,
+                40,
+                30
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/array",
+                    "value": [
+                        0,
+                        10,
+                        40,
+                        30
+                    ],
+                    "_prev": [
+                        0,
+                        10,
+                        20,
+                        30,
+                        40
+                    ]
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 25,
+            "gid": "7eazea5bxpk"
+        },
+        "result": {
+            "array": [
+                0,
+                10,
+                40,
+                30
+            ]
+        },
+        "name": "testcase 12"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                "one",
+                "two",
+                "three"
+            ]
+        },
+        "newDocument": {
+            "array": [
+                "one",
+                "two"
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/array",
+                    "value": [
+                        "one",
+                        "two"
+                    ],
+                    "_prev": [
+                        "one",
+                        "two",
+                        "three"
+                    ]
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 27,
+            "gid": "mnoz9udu18"
+        },
+        "result": {
+            "array": [
+                "one",
+                "two"
+            ]
+        },
+        "name": "testcase 13"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                "one",
+                "two",
+                "three",
+                "four"
+            ]
+        },
+        "newDocument": {
+            "array": [
+                "one",
+                "two",
+                "three"
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/array",
+                    "value": [
+                        "one",
+                        "two",
+                        "three"
+                    ],
+                    "_prev": [
+                        "one",
+                        "two",
+                        "three",
+                        "four"
+                    ]
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 29,
+            "gid": "xfiz7hy4qx7"
+        },
+        "result": {
+            "array": [
+                "one",
+                "two",
+                "three"
+            ]
+        },
+        "name": "testcase 14"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                "one",
+                "two",
+                "three",
+                "four"
+            ]
+        },
+        "newDocument": {
+            "array": [
+                "two",
+                "four",
+                "one"
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/array",
+                    "value": [
+                        "two",
+                        "four",
+                        "one"
+                    ],
+                    "_prev": [
+                        "one",
+                        "two",
+                        "three",
+                        "four"
+                    ]
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 31,
+            "gid": "gxb4md4brod"
+        },
+        "result": {
+            "array": [
+                "two",
+                "four",
+                "one"
+            ]
+        },
+        "name": "testcase 15"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "Foo"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ]
+        },
+        "newDocument": {
+            "array": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "Foo"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "remove",
+                    "path": "/array/[hgevcx9ds]",
+                    "_prev": {
+                        "id": "hgevcx9ds",
+                        "name": "Baa"
+                    }
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764431,
+            "seq": 33,
+            "gid": "fg9rpx7zmf8"
+        },
+        "result": {
+            "array": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "Foo"
+                }
+            ]
+        },
+        "name": "testcase 16"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "Foo"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ]
+        },
+        "newDocument": {
+            "array": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "123"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "World"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/array/[ret34sdf4]/name",
+                    "value": "123",
+                    "_prev": "Foo"
+                },
+                {
+                    "op": "replace",
+                    "path": "/array/[hgevcx9ds]/name",
+                    "value": "World",
+                    "_prev": "Baa"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 35,
+            "gid": "a6wd44ymmnc"
+        },
+        "result": {
+            "array": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "123"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "World"
+                }
+            ]
+        },
+        "name": "testcase 17"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "Foo"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ]
+        },
+        "newDocument": {
+            "array": [
+                {
+                    "id": "hgevcx9ds",
+                    "name": "World"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "123"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "move",
+                    "from": "/array/[hgevcx9ds]",
+                    "path": "/array/0"
+                },
+                {
+                    "op": "move",
+                    "from": "/array/[434dfsdsf]",
+                    "path": "/array/1"
+                },
+                {
+                    "op": "move",
+                    "from": "/array/[ret34sdf4]",
+                    "path": "/array/2"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 37,
+            "gid": "1h6x5ddtm3w"
+        },
+        "result": {
+            "array": [
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "Foo"
+                }
+            ]
+        },
+        "name": "testcase 18"
+    },
+    {
+        "oldDocument": {
+            "array": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "Foo"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ]
+        },
+        "newDocument": {
+            "array": [
+                {
+                    "id": "hgevcx9ds",
+                    "name": "World"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "123"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "remove",
+                    "path": "/array/[434dfsdsf]",
+                    "_prev": {
+                        "id": "434dfsdsf",
+                        "name": "Hello"
+                    }
+                },
+                {
+                    "op": "move",
+                    "from": "/array/[hgevcx9ds]",
+                    "path": "/array/0"
+                },
+                {
+                    "op": "move",
+                    "from": "/array/[ret34sdf4]",
+                    "path": "/array/1"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 39,
+            "gid": "2lfvow2o8n6"
+        },
+        "result": {
+            "array": [
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "Foo"
+                }
+            ]
+        },
+        "name": "testcase 19"
+    },
+    {
+        "oldDocument": {
+            "aaaa": "Change me",
+            "array": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "strings": [
+                "Foo",
+                "Bar",
+                "Baz"
+            ],
+            "title": "Hallo World"
+        },
+        "newDocument": {
+            "aaaa": "Ok!",
+            "array": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Me"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ],
+            "strings": [
+                "Foo",
+                "Welt",
+                "Baz"
+            ],
+            "title": "World Hallo"
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "replace",
+                    "path": "/aaaa",
+                    "value": "Ok!",
+                    "_prev": "Change me"
+                },
+                {
+                    "op": "replace",
+                    "path": "/array/[sdfw4ldhf]/name",
+                    "value": "Me",
+                    "_prev": "Change"
+                },
+                {
+                    "op": "move",
+                    "from": "/array/[ret34sdf4]",
+                    "path": "/array/1"
+                },
+                {
+                    "op": "move",
+                    "from": "/array/[434dfsdsf]",
+                    "path": "/array/2"
+                },
+                {
+                    "op": "move",
+                    "from": "/array/[hgevcx9ds]",
+                    "path": "/array/3"
+                },
+                {
+                    "op": "replace",
+                    "path": "/strings",
+                    "value": [
+                        "Foo",
+                        "Welt",
+                        "Baz"
+                    ],
+                    "_prev": [
+                        "Foo",
+                        "Bar",
+                        "Baz"
+                    ]
+                },
+                {
+                    "op": "replace",
+                    "path": "/title",
+                    "value": "World Hallo",
+                    "_prev": "Hallo World"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 41,
+            "gid": "4zoiji79z8x"
+        },
+        "result": {
+            "aaaa": "Ok!",
+            "array": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Me"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ],
+            "strings": [
+                "Foo",
+                "Welt",
+                "Baz"
+            ],
+            "title": "World Hallo"
+        },
+        "name": "testcase 20"
+    },
+    {
+        "oldDocument": {
+            "arrayOne": [
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "arrayTwo": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                }
+            ]
+        },
+        "newDocument": {
+            "arrayOne": [
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "arrayTwo": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "remove",
+                    "path": "/arrayOne/[hgevcx9ds]",
+                    "_prev": {
+                        "id": "hgevcx9ds",
+                        "name": "Baa"
+                    }
+                },
+                {
+                    "op": "add",
+                    "path": "/arrayTwo/[434dfsdsf]",
+                    "value": {
+                        "id": "hgevcx9ds",
+                        "name": "Baa"
+                    }
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 43,
+            "gid": "tsy7eenclno"
+        },
+        "result": {
+            "arrayOne": [
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "arrayTwo": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                }
+            ]
+        },
+        "name": "testcase 21"
+    },
+    {
+        "oldDocument": {
+            "arrayOne": [
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "arrayTwo": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                }
+            ]
+        },
+        "newDocument": {
+            "arrayOne": [
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "arrayTwo": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "remove",
+                    "path": "/arrayOne/[hgevcx9ds]",
+                    "_prev": {
+                        "id": "hgevcx9ds",
+                        "name": "Baa"
+                    }
+                },
+                {
+                    "op": "add",
+                    "path": "/arrayTwo/2",
+                    "value": {
+                        "id": "hgevcx9ds",
+                        "name": "Baa"
+                    }
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 45,
+            "gid": "a1udvyesn9"
+        },
+        "result": {
+            "arrayOne": [
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "arrayTwo": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ]
+        },
+        "name": "testcase 22"
+    },
+    {
+        "oldDocument": {
+            "arrayOne": [
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "arrayTwo": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                }
+            ]
+        },
+        "newDocument": {
+            "arrayOne": [
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "arrayTwo": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "remove",
+                    "path": "/arrayOne/[hgevcx9ds]",
+                    "_prev": {
+                        "id": "hgevcx9ds",
+                        "name": "Baa"
+                    }
+                },
+                {
+                    "op": "remove",
+                    "path": "/arrayTwo/[sdfw4ldhf]",
+                    "_prev": {
+                        "id": "sdfw4ldhf",
+                        "name": "Change"
+                    }
+                },
+                {
+                    "op": "add",
+                    "path": "/arrayTwo/1",
+                    "value": {
+                        "id": "hgevcx9ds",
+                        "name": "Baa"
+                    }
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 47,
+            "gid": "idhz7rkqzao"
+        },
+        "result": {
+            "arrayOne": [
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ],
+            "arrayTwo": [
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                }
+            ]
+        },
+        "name": "testcase 23"
+    },
+    {
+        "oldDocument": {
+            "arrayOne": [
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                },
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                }
+            ]
+        },
+        "newDocument": {
+            "arrayOne": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "move",
+                    "from": "/arrayOne/[sdfw4ldhf]",
+                    "path": "/arrayOne/0"
+                },
+                {
+                    "op": "move",
+                    "from": "/arrayOne/[434dfsdsf]",
+                    "path": "/arrayOne/1"
+                },
+                {
+                    "op": "move",
+                    "from": "/arrayOne/[ret34sdf4]",
+                    "path": "/arrayOne/2"
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 49,
+            "gid": "dyp1dzwxsdq"
+        },
+        "result": {
+            "arrayOne": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ]
+        },
+        "name": "testcase 24"
+    },
+    {
+        "oldDocument": {
+            "arrayOne": [
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                },
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                }
+            ]
+        },
+        "newDocument": {
+            "arrayOne": [
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "move",
+                    "from": "/arrayOne/[sdfw4ldhf]",
+                    "path": "/arrayOne/1"
+                },
+                {
+                    "op": "move",
+                    "from": "/arrayOne/[434dfsdsf]",
+                    "path": "/arrayOne/2"
+                },
+                {
+                    "op": "move",
+                    "from": "/arrayOne/[ret34sdf4]",
+                    "path": "/arrayOne/3"
+                },
+                {
+                    "op": "add",
+                    "path": "/arrayOne/[sdfw4ldhf]",
+                    "value": {
+                        "id": "hgevcx9ds",
+                        "name": "Baa"
+                    }
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 51,
+            "gid": "8i0wajmvk"
+        },
+        "result": {
+            "arrayOne": [
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ]
+        },
+        "name": "testcase 25"
+    },
+    {
+        "oldDocument": {
+            "arrayOne": [
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                },
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                }
+            ]
+        },
+        "newDocument": {
+            "arrayOne": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ]
+        },
+        "changes": {
+            "diff": [
+                {
+                    "op": "move",
+                    "from": "/arrayOne/[sdfw4ldhf]",
+                    "path": "/arrayOne/0"
+                },
+                {
+                    "op": "move",
+                    "from": "/arrayOne/[ret34sdf4]",
+                    "path": "/arrayOne/3"
+                },
+                {
+                    "op": "add",
+                    "path": "/arrayOne/[ret34sdf4]",
+                    "value": {
+                        "id": "hgevcx9ds",
+                        "name": "Baa"
+                    }
+                },
+                {
+                    "op": "add",
+                    "path": "/arrayOne/[hgevcx9ds]",
+                    "value": {
+                        "id": "434dfsdsf",
+                        "name": "Hello"
+                    }
+                }
+            ],
+            "cid": "cxmhuj4tiw5",
+            "ts": 1731323764432,
+            "seq": 53,
+            "gid": "w83ob208grs"
+        },
+        "result": {
+            "arrayOne": [
+                {
+                    "id": "sdfw4ldhf",
+                    "name": "Change"
+                },
+                {
+                    "id": "434dfsdsf",
+                    "name": "Hello"
+                },
+                {
+                    "id": "hgevcx9ds",
+                    "name": "Baa"
+                },
+                {
+                    "id": "ret34sdf4",
+                    "name": "World"
+                }
+            ]
+        },
+        "name": "testcase 26"
+    }
+]

@@ -296,6 +296,17 @@ func (d *Document) ReduceHistory(minTs int64) error {
 	return nil
 }
 
+func (d *Document) Diff(right *Document) (Changes, error) {
+	operations, err := diff(d.JSON(), right.JSON(), d.identifiers)
+	if err != nil {
+		return Changes{}, err
+	}
+
+	return Changes{
+		Diff: operations,
+	}, nil
+}
+
 func rawToJSON(value []byte, dataType jsonparser.ValueType) *json.RawMessage {
 	switch dataType {
 	case jsonparser.String:

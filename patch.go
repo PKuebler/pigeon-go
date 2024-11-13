@@ -3,6 +3,7 @@ package pigeongo
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/buger/jsonparser"
@@ -19,6 +20,8 @@ func patch(doc []byte, operations []Operation, identifiers [][]string) ([]byte, 
 		if err != nil {
 			return doc, err
 		}
+
+		patchObj = fixEndOfArrayPaths(newDoc, patchObj)
 
 		newDoc, err = patchObj.Apply(newDoc)
 		if err != nil {
@@ -99,4 +102,56 @@ func replacePath(doc []byte, path string, identifiers [][]string) (string, error
 	}
 
 	return strings.Join(newParts, "/"), nil
+}
+
+func fixEndOfArrayPaths(doc []byte, patchObj jsonpatch.Patch) jsonpatch.Patch {
+	for _, patch := range patchObj {
+		if path, err := patch.Path(); err == nil && path != "unknown" {
+			pathParts := strings.Split(path, "/")
+
+			// last element is index?
+			if index, err := strconv.Atoi(pathParts[len(pathParts)-1]); err == nil {
+				jsonparserParts := pathParts[1 : len(pathParts)-1]
+
+				// if last parent a array
+				lastIndex := 0
+				_, err := jsonparser.ArrayEach(doc, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+					lastIndex++
+				}, jsonparserParts...)
+				if err == nil {
+					// if after last index -> replace by -
+					if index >= lastIndex {
+						pathParts[len(pathParts)-1] = "-"
+					}
+				}
+			}
+
+			patch["path"] = rawMessage(fmt.Sprintf("\"%s\"", strings.Join(pathParts, "/")))
+		}
+
+		if path, err := patch.From(); err == nil && path != "unknown" {
+			pathParts := strings.Split(path, "/")
+
+			// last element is index?
+			if index, err := strconv.Atoi(pathParts[len(pathParts)-1]); err == nil {
+				jsonparserParts := pathParts[1 : len(pathParts)-1]
+
+				// if last parent a array
+				lastIndex := 0
+				_, err := jsonparser.ArrayEach(doc, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+					lastIndex++
+				}, jsonparserParts...)
+				if err == nil {
+					// if after last index -> replace by -
+					if index >= lastIndex {
+						pathParts[len(pathParts)-1] = "-"
+					}
+				}
+			}
+
+			patch["from"] = rawMessage(fmt.Sprintf("\"%s\"", strings.Join(pathParts, "/")))
+		}
+	}
+
+	return patchObj
 }

@@ -548,3 +548,31 @@ func TestGetValue(t *testing.T) {
 	assert.Equal(t, `"bar"`, string(*doc.getValue("/object/foo")))
 	assert.Equal(t, `"baa"`, string(*doc.getValue("/complex/[1234]/foo")))
 }
+
+func TestDiff(t *testing.T) {
+	t.Parallel()
+
+	rawA := []byte(`{"id":"card1", "number": 5678, "movearray": [{"id":"1234","value":"car"},{"id":"4734","value":"people"},{"id":"6523","value":"wood"}], "objectarray": [{"id":"1234","value":"car"},{"id":"4734","value":"people"}], "deepobject":{"id":"1423","text":"foo","childs":[{"id":"64334","value":"baa"}]}}`)
+	rawB := []byte(`{"id":"card1", "number": 1234, "movearray": [{"id":"6523","value":"wood"},{"id":"1234","value":"car"},{"id":"4734","value":"people"}], "objectarray": [{"id":"1234","value":"radio"},{"id":"5321","value":"home"},{"id":"4734","value":"people"}], "deepobject":{"id":"1423","text":"foo","childs":[{"id":"64334","value":"foo"}]},"boolean":true,"object":{"foo":"bar"},"array":["one","two"],"complex":[{"id":"1234","foo":"baa"}]}`)
+	docA := NewDocument(rawA)
+	docB := NewDocument(rawB)
+
+	changes, err := docA.Diff(docB)
+	changes.Ts = time.Now().UnixMilli()
+	changes.Cid = "50reifj9hyt"
+	changes.Gid = "dva96nqsdd"
+	assert.Nil(t, err)
+
+	docA.ApplyChanges(changes)
+	assert.Equal(t, "", docA.Warning)
+
+	assert.Equal(t, string(sortKeys(rawB)), string(sortKeys(docA.JSON())))
+}
+
+// sortKeys for the assert functions
+func sortKeys(doc []byte) []byte {
+	obj := map[string]interface{}{}
+	_ = json.Unmarshal(doc, &obj)
+	sorted, _ := json.Marshal(obj)
+	return sorted
+}
