@@ -93,7 +93,7 @@ func BenchmarkApplyChanges(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		// generate random string
 		nextValue := rawMessage(uuid.New().String())
-		doc.ApplyChanges(Changes{
+		_ = doc.ApplyChanges(Changes{
 			Diff: []Operation{
 				{
 					Op:    "replace",
