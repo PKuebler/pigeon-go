@@ -71,8 +71,8 @@ func TestPigeonJS(t *testing.T) {
 
 		// use own changes
 		fmt.Println("own changes!")
-		oldDocument.ApplyChanges(changes)
-		if !assert.Equal(t, "", oldDocument.Warning, "%s - ownChanges Warning", testCase.Name) {
+		err = oldDocument.ApplyChanges(changes)
+		if !assert.Nil(t, err, "%s - ownChanges Warning", testCase.Name) {
 			failed = true
 		}
 		if !assert.Equal(t, string(sortKeys(testCase.NewDocument)), string(sortKeys(oldDocument.JSON())), "testcase %s - ownChanges new document", testCase.Name) {
@@ -82,8 +82,8 @@ func TestPigeonJS(t *testing.T) {
 
 		// use pigoenJS changes
 		fmt.Println("pigoenJS changes")
-		pigeonJSDoc.ApplyChanges(testCase.Changes)
-		if !assert.Equal(t, "", pigeonJSDoc.Warning, "testcase %d - pigeonChanges Warning", i) {
+		err = pigeonJSDoc.ApplyChanges(testCase.Changes)
+		if !assert.Nil(t, err, "testcase %d - pigeonChanges Warning", i) {
 			failed = true
 		}
 		if !assert.Equal(t, string(sortKeys(testCase.Result)), string(sortKeys(pigeonJSDoc.JSON())), "testcase %d - pigeonChanges new document", i) {

@@ -19,7 +19,7 @@ import (
 func main() {
     doc := pigeongo.NewDocument([]byte(`{ "name": "Philipp" }`))
 
-    doc.ApplyChanges(Changes{
+    err := doc.ApplyChanges(Changes{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -36,7 +36,7 @@ func main() {
     // Print JSON
     fmt.Println(doc.JSON)
     // Print Warnings
-    fmt.Println(doc.Warning)
+    fmt.Println(err)
 }
 ```
 
@@ -48,4 +48,5 @@ pigeongo.NewDocument([]byte(`[{ "attrs": { "id": 123 }, "name": "Philipp" }]`), 
 
 ## Differences to the Javascript version
 
-With Changes it is possible to use a `mid` in addition to the `gid`. For example, it is also possible to transport a Kafka, Redis or network protocol ID.
+- With Changes it is possible to use a `mid` in addition to the `gid`. For example, it is also possible to transport a Kafka, Redis or network protocol ID.
+- If a command fails, the document remains in its initial state. A broken state is possible in PigeonJS.
