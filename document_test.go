@@ -75,7 +75,7 @@ func TestApplyChanges(t *testing.T) {
 	})
 
 	assert.Equal(t, `{"name":"Phil"}`, string(doc.JSON()))
-	assert.Equal(t, "patch error at changeID hhde2ffcgj: error in remove for path: '/notexist': Unable to remove nonexistent key: notexist: missing value", err.Error())
+	assert.Equal(t, "patch error: can't apply changeID hhde2ffcgj: error in remove for path: '/notexist': Unable to remove nonexistent key: notexist: missing value", err.Error())
 
 	_, err = json.Marshal(doc.History())
 	assert.NoError(t, err)
@@ -182,7 +182,7 @@ func TestIdentifiers(t *testing.T) {
 			path:          "/[123]/name",
 			value:         []byte(`[{"id": "123", "name": "card1", "value": 1}]`),
 			expected:      `[{"id":"123","name":"card1","value": 1}]`,
-			expectedError: "patch error at changeID dva96nqsdd: id `123` not found",
+			expectedError: "patch error: can't apply changeID dva96nqsdd: id `123` not found",
 		},
 		{
 			identifiers: [][]string{{"id"}},
@@ -195,14 +195,14 @@ func TestIdentifiers(t *testing.T) {
 			path:          "/[123]/content/[notfound]/text",
 			value:         []byte(`[{"id": "123", "content": [{"id":"hello", "text":"card1"}, {"id": "foo", "text": "baa"}], "value": 1}]`),
 			expected:      `[{"id": "123", "content": [{"id":"hello", "text":"card1"}, {"id": "foo", "text": "baa"}], "value": 1}]`,
-			expectedError: "patch error at changeID dva96nqsdd: id `notfound` not found",
+			expectedError: "patch error: can't apply changeID dva96nqsdd: id `notfound` not found",
 		},
 		{
 			identifiers:   [][]string{{"id"}},
 			path:          "/[123]/content/[1234]/text",
 			value:         []byte(`[{"id": "123", "content": [{"text":"card1"}, {"text": "baa"}], "value": 1}]`),
 			expected:      `[{"id": "123", "content": [{"text":"card1"}, {"text": "baa"}], "value": 1}]`,
-			expectedError: "patch error at changeID dva96nqsdd: id `1234` not found",
+			expectedError: "patch error: can't apply changeID dva96nqsdd: id `1234` not found",
 		},
 		{
 			identifiers: [][]string{{"id"}},
@@ -560,7 +560,7 @@ func TestRemove(t *testing.T) {
 	})
 
 	assert.Len(t, doc.history, 1)
-	assert.Equal(t, "patch error at changeID dva96nqsdd: id `card132` not found", err.Error())
+	assert.Equal(t, "patch error: can't apply changeID dva96nqsdd: id `card132` not found", err.Error())
 }
 
 func TestGetValue(t *testing.T) {
