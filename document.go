@@ -203,7 +203,7 @@ func (d *Document) ApplyChanges(changes Changes) error {
 	workingCopy := d.Clone()
 
 	if err := workingCopy.rewindChanges(changes.Ts, changes.Cid); err != nil {
-		return err
+		return fmt.Errorf("patch error for changeID %s: %s", changes.Gid, err)
 	}
 
 	// remove external _prev from changes
@@ -216,13 +216,13 @@ func (d *Document) ApplyChanges(changes Changes) error {
 	var err error
 	workingCopy.raw, err = patch(workingCopy.raw, changes.Diff, workingCopy.identifiers)
 	if err != nil {
-		return fmt.Errorf("patch error at changeID %s: %s", changes.Gid, err.Error())
+		return fmt.Errorf("patch error: can't apply changeID %s: %s", changes.Gid, err.Error())
 	}
 
 	workingCopy.gids[changes.Gid] = 1
 
 	if err := workingCopy.fastForwardChanges(); err != nil {
-		return err
+		return fmt.Errorf("patch error for changeID %s: %s", changes.Gid, err)
 	}
 
 	idx := len(workingCopy.history)
@@ -304,7 +304,7 @@ func (d *Document) fastForwardChanges() error {
 
 		d.raw, err = patch(d.raw, change.Diff, d.identifiers)
 		if err != nil {
-			return fmt.Errorf("fast forward error at changeID %s: %s", change.Gid, err.Error())
+			return fmt.Errorf("fast forward error: can't patch changeID %s from stash: %s", change.Gid, err.Error())
 		}
 
 		d.gids[change.Gid] = 1
@@ -331,7 +331,7 @@ func (d *Document) rewindChanges(ts int64, cid string) error {
 			var err error
 			d.raw, err = patch(d.raw, reverse(c.Diff, d.identifiers), d.identifiers)
 			if err != nil {
-				return fmt.Errorf("rewind error at changeID %s: %s", change.Gid, err.Error())
+				return fmt.Errorf("rewind error: can't reverse patch changeID %s from history: %s", change.Gid, err.Error())
 			}
 
 			delete(d.gids, c.Gid)
