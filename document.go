@@ -41,7 +41,6 @@ func WithInitialMid(mid string) DocumentOption {
 type Document struct {
 	raw         []byte
 	history     []Changes
-	Warning     string
 	gids        map[string]int
 	stash       []Changes
 	identifiers [][]string
@@ -162,65 +161,152 @@ func (d *Document) Clone() *Document {
 	return clone
 }
 
-func (d *Document) ApplyChanges(changes Changes) {
-	// reset warning
-	d.Warning = ""
+// replaceByWorkingCopy overwrite all fields in this document (without identifiers)!
+func (d *Document) replaceByWorkingCopy(workingCopy *Document) {
+	d.raw = workingCopy.raw
+	d.history = workingCopy.history
+	d.stash = workingCopy.stash
+	d.gids = workingCopy.gids
+}
 
-	if _, ok := d.gids[changes.Gid]; ok {
-		return
+// FastForwardChanges apply all changes from the stash. It change nothing, if one change failed.
+func (d *Document) FastForwardChanges() error {
+	workingCopy := d.Clone()
+
+	if err := workingCopy.fastForwardChanges(); err != nil {
+		return err
 	}
 
-	if err := d.RewindChanges(changes.Ts, changes.Cid); err != nil {
-		d.Warning = fmt.Sprintf("rewind error: %s", err.Error())
+	d.replaceByWorkingCopy(workingCopy)
+	return nil
+}
+
+// RewindChanges rewind to a specific change. It change nothing, if one change failed.
+func (d *Document) RewindChanges(ts int64, cid string) error {
+	workingCopy := d.Clone()
+
+	if err := workingCopy.rewindChanges(ts, cid); err != nil {
+		return err
+	}
+
+	d.replaceByWorkingCopy(workingCopy)
+	return nil
+}
+
+// ApplyChanges to the document. It change nothing, if one operation failed.
+func (d *Document) ApplyChanges(changes Changes) error {
+	// skip changes if gid is processed
+	if _, ok := d.gids[changes.Gid]; ok {
+		return nil
+	}
+
+	workingCopy := d.Clone()
+
+	if err := workingCopy.rewindChanges(changes.Ts, changes.Cid); err != nil {
+		return fmt.Errorf("patch error for changeID %s: %s", changes.Gid, err)
 	}
 
 	// remove external _prev from changes
 	// set prev value
 	for i := range changes.Diff {
-		changes.Diff[i].Prev = d.getValue(changes.Diff[i].Path)
+		changes.Diff[i].Prev = workingCopy.getValue(changes.Diff[i].Path)
 	}
 
+	// apply
 	var err error
-	d.raw, err = patch(d.raw, changes.Diff, d.identifiers)
+	workingCopy.raw, err = patch(workingCopy.raw, changes.Diff, workingCopy.identifiers)
 	if err != nil {
-		d.Warning = fmt.Sprintf("patch error: %s", err.Error())
+		return fmt.Errorf("patch error: can't apply changeID %s: %s", changes.Gid, err.Error())
 	}
 
-	d.gids[changes.Gid] = 1
+	workingCopy.gids[changes.Gid] = 1
 
-	if err := d.FastForwardChanges(); err != nil {
-		d.Warning = fmt.Sprintf("fast forward error: %s", err.Error())
+	if err := workingCopy.fastForwardChanges(); err != nil {
+		return fmt.Errorf("patch error for changeID %s: %s", changes.Gid, err)
 	}
 
-	idx := len(d.history)
+	idx := len(workingCopy.history)
 	if idx == 0 {
-		d.history = append(d.history, changes)
-		return
+		workingCopy.history = append(workingCopy.history, changes)
+		d.replaceByWorkingCopy(workingCopy)
+		return nil
 	}
 
 	// find position to insert
-	for idx > 1 && d.history[idx-1].Ts > changes.Ts {
+	for idx > 1 && workingCopy.history[idx-1].Ts > changes.Ts {
 		idx--
 	}
 
 	// empty history or after last element
-	if len(d.history) == idx {
-		d.history = append(d.history, changes)
-		return
+	if len(workingCopy.history) == idx {
+		workingCopy.history = append(workingCopy.history, changes)
+		d.replaceByWorkingCopy(workingCopy)
+		return nil
 	}
 
-	d.history = append(d.history[:idx+1], d.history[idx:]...)
-	d.history[idx] = changes
+	workingCopy.history = append(workingCopy.history[:idx+1], workingCopy.history[idx:]...)
+	workingCopy.history[idx] = changes
+
+	d.replaceByWorkingCopy(workingCopy)
+	return nil
 }
 
-func (d *Document) FastForwardChanges() error {
+func (d *Document) ReduceHistory(minTs int64) error {
+	if len(d.history) == 1 {
+		// only the initial diff, nothing to reduce
+		return nil
+	}
+
+	workingCopy := d.Clone()
+
+	// rewind all changes that are newer the minimum timestamp
+	if err := workingCopy.rewindChanges(minTs, ""); err != nil {
+		return err
+	}
+
+	// new first diff is the initial diff
+	newHistory := []Changes{
+		{
+			Diff: createInitialDiff(workingCopy.raw),
+			Ts:   workingCopy.history[len(workingCopy.history)-1].Ts,
+			Cid:  workingCopy.history[len(workingCopy.history)-1].Cid,
+			Gid:  workingCopy.history[len(workingCopy.history)-1].Gid,
+			Mid:  workingCopy.history[len(workingCopy.history)-1].Mid,
+		},
+	}
+
+	// reverse append the stash changes
+	for i := len(workingCopy.stash) - 1; i >= 0; i-- {
+		newHistory = append(newHistory, workingCopy.stash[i])
+	}
+
+	// append all newer changes to history
+	if err := workingCopy.FastForwardChanges(); err != nil {
+		return err
+	}
+
+	workingCopy.history = newHistory
+
+	d.replaceByWorkingCopy(workingCopy)
+	return nil
+}
+
+// fastForwardChanges will apply all changes in the stash. It will stop if a patch fails and reset nothing!
+func (d *Document) fastForwardChanges() error {
 	var err error
 	for i := len(d.stash) - 1; i >= 0; i-- {
 		change := d.stash[i]
+
+		// set prev value, maybe changed by patch before!
+		for i := range change.Diff {
+			change.Diff[i].Prev = d.getValue(change.Diff[i].Path)
+		}
+
 		d.raw, err = patch(d.raw, change.Diff, d.identifiers)
 		if err != nil {
-			return err
+			return fmt.Errorf("fast forward error: can't patch changeID %s from stash: %s", change.Gid, err.Error())
 		}
+
 		d.gids[change.Gid] = 1
 		d.history = append(d.history, change)
 	}
@@ -229,8 +315,8 @@ func (d *Document) FastForwardChanges() error {
 	return nil
 }
 
-func (d *Document) RewindChanges(ts int64, cid string) error {
-	docJSON := d.raw
+// rewindChanges will rewind all changes in the history. It will stop if a patch fails and reset nothing!
+func (d *Document) rewindChanges(ts int64, cid string) error {
 	for {
 		if len(d.history) <= 1 {
 			break
@@ -243,9 +329,9 @@ func (d *Document) RewindChanges(ts int64, cid string) error {
 			d.history = d.history[:len(d.history)-1]
 
 			var err error
-			docJSON, err = patch(docJSON, reverse(c.Diff, d.identifiers), d.identifiers)
+			d.raw, err = patch(d.raw, reverse(c.Diff, d.identifiers), d.identifiers)
 			if err != nil {
-				return err
+				return fmt.Errorf("rewind error: can't reverse patch changeID %s from history: %s", change.Gid, err.Error())
 			}
 
 			delete(d.gids, c.Gid)
@@ -255,44 +341,6 @@ func (d *Document) RewindChanges(ts int64, cid string) error {
 		break
 	}
 
-	d.raw = docJSON
-
-	return nil
-}
-
-func (d *Document) ReduceHistory(minTs int64) error {
-	if len(d.history) == 1 {
-		// only the initial diff, nothing to reduce
-		return nil
-	}
-
-	// rewind all changes that are newer the minimum timestamp
-	if err := d.RewindChanges(minTs, ""); err != nil {
-		return err
-	}
-
-	// new first diff is the initial diff
-	newHistory := []Changes{
-		{
-			Diff: createInitialDiff(d.raw),
-			Ts:   d.history[len(d.history)-1].Ts,
-			Cid:  d.history[len(d.history)-1].Cid,
-			Gid:  d.history[len(d.history)-1].Gid,
-			Mid:  d.history[len(d.history)-1].Mid,
-		},
-	}
-
-	// reverse append the stash changes
-	for i := len(d.stash) - 1; i >= 0; i-- {
-		newHistory = append(newHistory, d.stash[i])
-	}
-
-	// append all newer changes to history
-	if err := d.FastForwardChanges(); err != nil {
-		return err
-	}
-
-	d.history = newHistory
 	return nil
 }
 
