@@ -209,7 +209,15 @@ func (d *Document) ApplyChanges(changes Changes) error {
 	// remove external _prev from changes
 	// set prev value
 	for i := range changes.Diff {
-		changes.Diff[i].Prev = workingCopy.getValue(changes.Diff[i].Path)
+		if changes.Diff[i].Op == "add" {
+			changes.Diff[i].Prev = nil
+		} else {
+			changes.Diff[i].Prev = workingCopy.getValue(changes.Diff[i].Path)
+		}
+
+		if changes.Diff[i].Op == "remove" {
+			changes.Diff[i].Value = nil
+		}
 	}
 
 	// apply
@@ -281,7 +289,7 @@ func (d *Document) ReduceHistory(minTs int64) error {
 	}
 
 	// append all newer changes to history
-	if err := workingCopy.FastForwardChanges(); err != nil {
+	if err := workingCopy.fastForwardChanges(); err != nil {
 		return err
 	}
 
@@ -299,7 +307,15 @@ func (d *Document) fastForwardChanges() error {
 
 		// set prev value, maybe changed by patch before!
 		for i := range change.Diff {
-			change.Diff[i].Prev = d.getValue(change.Diff[i].Path)
+			if change.Diff[i].Op == "add" {
+				change.Diff[i].Prev = nil
+			} else {
+				change.Diff[i].Prev = d.getValue(change.Diff[i].Path)
+			}
+
+			if change.Diff[i].Op == "remove" {
+				change.Diff[i].Value = nil
+			}
 		}
 
 		d.raw, err = patch(d.raw, change.Diff, d.identifiers)
