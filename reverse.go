@@ -15,6 +15,7 @@ func reverse(operations []Operation, identifiers [][]string) []Operation {
 		switch operation.Op {
 		case "add":
 			operation.Op = "remove"
+			operation.Prev = nil
 
 			// if value is a object
 			id := findID(*operation.Value, identifiers)
@@ -25,10 +26,15 @@ func reverse(operations []Operation, identifiers [][]string) []Operation {
 					// replace /array/0 with /array/[objId]
 					parts[len(parts)-1] = "[" + id + "]"
 					operation.Path = strings.Join(parts, "/")
+				} else if strings.HasPrefix(parts[len(parts)-1], "[") && strings.HasSuffix(parts[len(parts)-1], "]") {
+					// replace /array/[insertBeforeThisId] with /array/[objId]
+					parts[len(parts)-1] = "[" + id + "]"
+					operation.Path = strings.Join(parts, "/")
 				}
 			}
 		case "remove":
 			operation.Op = "add"
+			operation.Value = nil
 
 			parts := strings.Split(operation.Path, "/")
 			if strings.HasPrefix(parts[len(parts)-1], "[") && strings.HasSuffix(parts[len(parts)-1], "]") {

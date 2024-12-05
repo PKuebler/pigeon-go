@@ -398,6 +398,125 @@ func TestReduceHistory(t *testing.T) {
 	assert.Equal(t, now.UnixMilli(), clone.History()[0].Ts)
 }
 
+func TestReduceHistoryWithIDs(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().Add(-1 * time.Hour)
+	doc := NewDocument([]byte(`{"id": "123", "body":[{"id":"card1","value":"test"},{"id":"card2","value":"baa"}]}`), WithInitialIDs("client-id", "change-id"), WithInitialMid("msg-id"), WithInitialTime(now))
+
+	err := doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "add",
+				Path:  "/body/[card2]",
+				Value: rawMessage(`{"id":"card3","value":"tttt"}`),
+			},
+		},
+		Ts:  now.Add(10 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "dva96nqsdd",
+		Mid: "50reifj9hyt-dva96nqsdd",
+	})
+	assert.Nil(t, err)
+	err = doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/body/[card3]/value",
+				Value: rawMessage(`"bar"`),
+			},
+		},
+		Ts:  now.Add(40 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "hreifj9hyt",
+		Mid: "50reifj9hyt-hreifj9hyt",
+	})
+	assert.Nil(t, err)
+	err = doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "replace",
+				Path:  "/body/1/value",
+				Value: rawMessage(`"retert"`),
+			},
+		},
+		Ts:  now.Add(40 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "75reifj9hyt",
+		Mid: "50reifj9hyt-75reifj9hyt",
+	})
+	assert.Nil(t, err)
+	err = doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:   "remove",
+				Path: "/body/[card3]",
+			},
+		},
+		Ts:  now.Add(60 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "jdva96nqsdd",
+		Mid: "50reifj9hyt-jdva96nqsdd",
+	})
+	assert.Nil(t, err)
+	err = doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:   "remove",
+				Path: "/body/[card2]",
+			},
+		},
+		Ts:  now.Add(65 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "5gdva96nqsdd",
+		Mid: "50reifj9hyt-5gdva96nqsdd",
+	})
+	assert.Nil(t, err)
+	err = doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "add",
+				Path:  "/body/[card1]",
+				Value: rawMessage(`{"id":"card4","value":"ooooo"}`),
+			},
+		},
+		Ts:  now.Add(75 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "6gdva96nqsdd",
+		Mid: "50reifj9hyt-6gdva96nqsdd",
+	})
+	assert.Nil(t, err)
+	err = doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:    "add",
+				Path:  "/body/0",
+				Value: rawMessage(`{"id":"card5","value":"gggggg"}`),
+			},
+		},
+		Ts:  now.Add(80 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "7gdva96nqsdd",
+		Mid: "50reifj9hyt-7gdva96nqsdd",
+	})
+	assert.Nil(t, err)
+	err = doc.ApplyChanges(Changes{
+		Diff: []Operation{
+			{
+				Op:   "remove",
+				Path: "/body/2",
+			},
+		},
+		Ts:  now.Add(85 * time.Second).UnixMilli(),
+		Cid: "50reifj9hyt",
+		Gid: "8gdva96nqsdd",
+		Mid: "50reifj9hyt-8gdva96nqsdd",
+	})
+	assert.Nil(t, err)
+
+	assert.Nil(t, doc.ReduceHistory(2000))
+}
+
 func TestFastForwardChanges(t *testing.T) {
 	t.Parallel()
 
