@@ -333,11 +333,7 @@ func (d *Document) fastForwardChanges() error {
 
 // rewindChanges will rewind all changes in the history. It will stop if a patch fails and reset nothing!
 func (d *Document) rewindChanges(ts int64, cid string) error {
-	for {
-		if len(d.history) <= 1 {
-			break
-		}
-
+	for len(d.history) > 1 {
 		change := d.history[len(d.history)-1]
 		if change.Ts > ts || (change.Ts == ts && change.Cid > cid) {
 			// get element and pop from history
