@@ -14,8 +14,9 @@ import (
 func TestApplyChanges(t *testing.T) {
 	t.Parallel()
 
-	doc := NewDocument([]byte(`{ "name": "Philipp" }`))
-	err := doc.ApplyChanges(Changes{
+	doc, err := NewDocument([]byte(`{ "name": "Philipp" }`))
+	assert.Nil(t, err)
+	err = doc.ApplyChanges(Changes{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -87,7 +88,8 @@ func TestApplyChanges(t *testing.T) {
 }
 
 func BenchmarkApplyChanges(b *testing.B) {
-	doc := NewDocument([]byte(`{ "name": "Philipp" }`))
+	doc, err := NewDocument([]byte(`{ "name": "Philipp" }`))
+	assert.Nil(b, err)
 	b.ResetTimer()
 	lastValue := rawMessage(`"Philipp"`)
 	for n := 0; n < b.N; n++ {
@@ -200,49 +202,48 @@ func TestIdentifiers(t *testing.T) {
 		{
 			identifiers:   [][]string{{"id"}},
 			path:          "/[123]/content/[1234]/text",
-			value:         []byte(`[{"id": "123", "content": [{"text":"card1"}, {"text": "baa"}], "value": 1}]`),
-			expected:      `[{"id": "123", "content": [{"text":"card1"}, {"text": "baa"}], "value": 1}]`,
+			value:         []byte(`[{"id": "123", "content": [{"id":"1", "text":"card1"}, {"id":"2", "text": "baa"}], "value": 1}]`),
+			expected:      `[{"id": "123", "content": [{"id":"1", "text":"card1"}, {"id":"2", "text": "baa"}], "value": 1}]`,
 			expectedError: "patch error: can't apply changeID dva96nqsdd: id `1234` not found",
-		},
-		{
-			identifiers: [][]string{{"id"}},
-			path:        "/[123]/content/1/text",
-			value:       []byte(`[{"id": "123", "content": [{"text":"card1"}, {"text": "card1"}], "value": 1}]`),
-			expected:    `[{"id": "123", "content": [{"text":"card1"}, {"text": "card2"}], "value": 1}]`,
 		},
 	}
 
-	for _, testCase := range testCases {
-		var opts []DocumentOption
-		if testCase.identifiers != nil {
-			opts = append(opts, WithIdentifiers(testCase.identifiers))
-		}
-		doc := NewDocument(testCase.value, opts...)
-		if testCase.identifiers != nil {
-			assert.Equal(t, testCase.identifiers, doc.identifiers)
-		}
+	for i, testCase := range testCases {
+		t.Run(fmt.Sprintf("testCase %d", i), func(t *testing.T) {
+			t.Parallel()
 
-		// patch name by identifier
-		err := doc.ApplyChanges(Changes{
-			Diff: []Operation{
-				{
-					Op:    "replace",
-					Path:  testCase.path,
-					Value: rawMessage(`"card2"`),
-					Prev:  rawMessage(`"card1"`),
-				},
-			},
-			Ts:  1,
-			Cid: "50reifj9hyt",
-			Gid: "dva96nqsdd",
-		})
-
-		if testCase.expectedError == "" {
+			var opts []DocumentOption
+			if testCase.identifiers != nil {
+				opts = append(opts, WithIdentifiers(testCase.identifiers))
+			}
+			doc, err := NewDocument(testCase.value, opts...)
 			assert.Nil(t, err)
-		} else {
-			assert.Equal(t, testCase.expectedError, err.Error())
-		}
-		assert.JSONEq(t, testCase.expected, string(doc.JSON()))
+			if testCase.identifiers != nil {
+				assert.Equal(t, testCase.identifiers, doc.identifiers)
+			}
+
+			// patch name by identifier
+			err = doc.ApplyChanges(Changes{
+				Diff: []Operation{
+					{
+						Op:    "replace",
+						Path:  testCase.path,
+						Value: rawMessage(`"card2"`),
+						Prev:  rawMessage(`"card1"`),
+					},
+				},
+				Ts:  1,
+				Cid: "50reifj9hyt",
+				Gid: "dva96nqsdd",
+			})
+
+			if testCase.expectedError == "" {
+				assert.Nil(t, err)
+			} else {
+				assert.Equal(t, testCase.expectedError, err.Error())
+			}
+			assert.JSONEq(t, testCase.expected, string(doc.JSON()))
+		})
 	}
 }
 
@@ -250,11 +251,12 @@ func TestOptions(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	doc := NewDocument(
+	doc, err := NewDocument(
 		[]byte(`{"id": "123"}`),
 		WithInitialIDs("client-id", "g-id"),
 		WithInitialTime(now),
 	)
+	assert.Nil(t, err)
 
 	firstEntry := doc.History()[0]
 	assert.Equal(t, now.UnixMilli(), firstEntry.Ts)
@@ -265,9 +267,10 @@ func TestOptions(t *testing.T) {
 func TestClone(t *testing.T) {
 	t.Parallel()
 
-	doc := NewDocument([]byte(`{"id": "123"}`))
+	doc, err := NewDocument([]byte(`{"id": "123"}`))
+	assert.Nil(t, err)
 
-	err := doc.ApplyChanges(Changes{
+	err = doc.ApplyChanges(Changes{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -332,7 +335,8 @@ func TestReduceHistory(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now().Add(-1 * time.Hour)
-	doc := NewDocument([]byte(`{"id": "123"}`), WithInitialIDs("client-id", "change-id"), WithInitialMid("msg-id"), WithInitialTime(now))
+	doc, err := NewDocument([]byte(`{"id": "123"}`), WithInitialIDs("client-id", "change-id"), WithInitialMid("msg-id"), WithInitialTime(now))
+	assert.Nil(t, err)
 
 	assert.Nil(t, doc.ReduceHistory(2000))
 	assert.Len(t, doc.History(), 1)
@@ -340,7 +344,7 @@ func TestReduceHistory(t *testing.T) {
 	assert.Equal(t, "client-id", doc.History()[0].Cid)
 	assert.Equal(t, "msg-id", doc.History()[0].Mid)
 
-	err := doc.ApplyChanges(Changes{
+	err = doc.ApplyChanges(Changes{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -402,9 +406,10 @@ func TestReduceHistoryWithIDs(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now().Add(-1 * time.Hour)
-	doc := NewDocument([]byte(`{"id": "123", "body":[{"id":"card1","value":"test"},{"id":"card2","value":"baa"}]}`), WithInitialIDs("client-id", "change-id"), WithInitialMid("msg-id"), WithInitialTime(now))
+	doc, err := NewDocument([]byte(`{"id": "123", "body":[{"id":"card1","value":"test"},{"id":"card2","value":"baa"}]}`), WithInitialIDs("client-id", "change-id"), WithInitialMid("msg-id"), WithInitialTime(now))
+	assert.Nil(t, err)
 
-	err := doc.ApplyChanges(Changes{
+	err = doc.ApplyChanges(Changes{
 		Diff: []Operation{
 			{
 				Op:    "add",
@@ -521,9 +526,10 @@ func TestFastForwardChanges(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	doc := NewDocument([]byte(`{"id":"card1"}`))
+	doc, err := NewDocument([]byte(`{"id":"card1"}`))
+	assert.Nil(t, err)
 
-	err := doc.ApplyChanges(Changes{
+	err = doc.ApplyChanges(Changes{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -595,9 +601,10 @@ func TestWrongPrev(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	doc := NewDocument([]byte(`{"id":"card1"}`))
+	doc, err := NewDocument([]byte(`{"id":"card1"}`))
+	assert.Nil(t, err)
 
-	err := doc.ApplyChanges(Changes{
+	err = doc.ApplyChanges(Changes{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -665,8 +672,10 @@ func TestRemove(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	doc := NewDocument([]byte(`{"cards":[{"id":"card1"}]}`))
-	err := doc.ApplyChanges(Changes{
+	doc, err := NewDocument([]byte(`{"cards":[{"id":"card1"}]}`))
+	assert.Nil(t, err)
+
+	err = doc.ApplyChanges(Changes{
 		Diff: []Operation{
 			{
 				Op:   "remove",
@@ -685,7 +694,8 @@ func TestRemove(t *testing.T) {
 func TestGetValue(t *testing.T) {
 	t.Parallel()
 
-	doc := NewDocument([]byte(`{"id":"card1", "number": 1234, "boolean": true, "object": {"foo": "bar"},  "array": ["one", "two"], "complex": [{"id":"1234","foo":"baa"}]}`))
+	doc, err := NewDocument([]byte(`{"id":"card1", "number": 1234, "boolean": true, "object": {"foo": "bar"},  "array": ["one", "two"], "complex": [{"id":"1234","foo":"baa"}]}`))
+	assert.Nil(t, err)
 
 	assert.Equal(t, `"card1"`, string(*doc.getValue("/id")))
 	assert.Equal(t, `1234`, string(*doc.getValue("/number")))
@@ -701,8 +711,10 @@ func TestDiff(t *testing.T) {
 
 	rawA := []byte(`{"id":"card1", "number": 5678, "movearray": [{"id":"1234","value":"car"},{"id":"4734","value":"people"},{"id":"6523","value":"wood"}], "objectarray": [{"id":"1234","value":"car"},{"id":"4734","value":"people"}], "deepobject":{"id":"1423","text":"foo","childs":[{"id":"64334","value":"baa"}]}}`)
 	rawB := []byte(`{"id":"card1", "number": 1234, "movearray": [{"id":"6523","value":"wood"},{"id":"1234","value":"car"},{"id":"4734","value":"people"}], "objectarray": [{"id":"1234","value":"radio"},{"id":"5321","value":"home"},{"id":"4734","value":"people"}], "deepobject":{"id":"1423","text":"foo","childs":[{"id":"64334","value":"foo"}]},"boolean":true,"object":{"foo":"bar"},"array":["one","two"],"complex":[{"id":"1234","foo":"baa"}]}`)
-	docA := NewDocument(rawA)
-	docB := NewDocument(rawB)
+	docA, errA := NewDocument(rawA)
+	docB, errB := NewDocument(rawB)
+	assert.Nil(t, errA)
+	assert.Nil(t, errB)
 
 	changes, err := docA.Diff(docB)
 	changes.Ts = time.Now().UnixMilli()

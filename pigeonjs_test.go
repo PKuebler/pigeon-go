@@ -31,18 +31,20 @@ func TestPigeonJS(t *testing.T) {
 	for i, testCase := range testCases {
 		fmt.Println("")
 		fmt.Println("##### ", testCase.Name)
-		oldDocument := NewDocument(
+		oldDocument, err := NewDocument(
 			testCase.OldDocument,
 			WithIdentifiers([][]string{
 				{"attrs", "id"}, {"id"}, {"_id"}, {"uuid"}, {"slug"},
 			}),
 		)
-		newDocument := NewDocument(
+		assert.Nil(t, err)
+		newDocument, err := NewDocument(
 			testCase.NewDocument,
 			WithIdentifiers([][]string{
 				{"attrs", "id"}, {"id"}, {"_id"}, {"uuid"}, {"slug"},
 			}),
 		)
+		assert.Nil(t, err)
 		changes, err := oldDocument.Diff(newDocument)
 		assert.Nil(t, err)
 
