@@ -9,7 +9,7 @@ import (
 func TestValidateDuplicateIdentifiers(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	testCases := []struct {
 		name        string
 		data        []byte
 		identifiers [][]string
@@ -35,12 +35,14 @@ func TestValidateDuplicateIdentifiers(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := validateDuplicateIdentifiers(tt.data, tt.identifiers)
-			if tt.expectError {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateDuplicateIdentifiers(testCase.data, testCase.identifiers)
+			if testCase.expectError {
 				assert.NotNil(t, err)
-				assert.EqualError(t, err, tt.errorMsg)
+				assert.EqualError(t, err, testCase.errorMsg)
 			} else {
 				assert.Nil(t, err)
 			}
@@ -51,7 +53,7 @@ func TestValidateDuplicateIdentifiers(t *testing.T) {
 func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	testCases := []struct {
 		name        string
 		data        any
 		identifiers [][]string
@@ -151,12 +153,14 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := walkValidateDuplicateIdentifiers(tt.data, tt.identifiers)
-			if tt.expectError {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := walkValidateDuplicateIdentifiers(testCase.data, testCase.identifiers)
+			if testCase.expectError {
 				assert.NotNil(t, err)
-				assert.EqualError(t, err, tt.errorMsg)
+				assert.EqualError(t, err, testCase.errorMsg)
 			} else {
 				assert.Nil(t, err)
 			}
