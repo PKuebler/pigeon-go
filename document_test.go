@@ -11,6 +11,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCreateDocument(t *testing.T) {
+	t.Parallel()
+
+	// test with invalid JSON
+	doc, err := NewDocument([]byte(`{"id": "123", "name": "card1", "value": 1`))
+	assert.NotNil(t, err)
+	assert.Nil(t, doc)
+
+	// test with duplicate ids
+	doc, err = NewDocument([]byte(`[{"id": "123", "name": "card1", "value": 1}, {"id": "123", "name": "card2", "value": 2}]`))
+	assert.NotNil(t, err)
+	assert.Nil(t, doc)
+
+	// test with string
+	doc, err = NewDocument([]byte(`"123"`))
+	assert.Nil(t, err)
+	assert.NotNil(t, doc)
+}
+
 func TestApplyChanges(t *testing.T) {
 	t.Parallel()
 

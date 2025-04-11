@@ -17,6 +17,12 @@ func TestValidateDuplicateIdentifiers(t *testing.T) {
 		errorMsg    string
 	}{
 		{
+			name:        "No identifiers",
+			data:        []byte(`[{"id": "1", "name": "Alice"}, {"id": "2", "name": "Bob"}]`),
+			identifiers: nil,
+			expectError: false,
+		},
+		{
 			name: "No duplicates in array of objects",
 			data: []byte(`[{"id": "1", "name": "Alice"}, {"id": "2", "name": "Bob"}]`),
 			identifiers: [][]string{
@@ -32,6 +38,15 @@ func TestValidateDuplicateIdentifiers(t *testing.T) {
 			},
 			expectError: true,
 			errorMsg:    "duplicate identifier found: [1] at index 1",
+		},
+		{
+			name: "Bad JSON",
+			data: []byte(`{"id": "1", "name": "Alice"`),
+			identifiers: [][]string{
+				{"id"},
+			},
+			expectError: true,
+			errorMsg:    "unexpected end of JSON input",
 		},
 	}
 
@@ -118,6 +133,15 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name: "No identifiers",
+			data: []any{
+				map[string]any{"id": "1", "name": "Alice"},
+				map[string]any{"id": "2", "name": "Bob"},
+			},
+			identifiers: nil,
+			expectError: false,
+		},
+		{
 			name:        "Empty data",
 			data:        []any{},
 			identifiers: [][]string{{"id"}},
@@ -150,6 +174,40 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 			identifiers: [][]string{{"reference", "id"}},
 			expectError: true,
 			errorMsg:    "duplicate identifier found: [1] at index 1",
+		},
+		{
+			name: "Duplicate ids in nested object",
+			data: map[string]any{
+				"children": []any{
+					map[string]any{"id": "1"},
+					map[string]any{"id": "1"},
+				},
+			},
+			identifiers: [][]string{{"id"}},
+			expectError: true,
+			errorMsg:    "duplicate identifier found: [1] at index 1",
+		},
+		{
+			name: "Duplicate ids in nested array",
+			data: []any{
+				[]any{
+					map[string]any{"id": "1"},
+					map[string]any{"id": "1"},
+				},
+			},
+			identifiers: [][]string{{"id"}},
+			expectError: true,
+			errorMsg:    "duplicate identifier found: [1] at index 1",
+		},
+		{
+			name: "Empty ids",
+			data: []any{
+				map[string]any{"name": "Alice"},
+				map[string]any{"name": "Bob"},
+			},
+			identifiers: [][]string{{"id"}},
+			expectError: true,
+			errorMsg:    "duplicate identifier found: missing id at index 1",
 		},
 	}
 
