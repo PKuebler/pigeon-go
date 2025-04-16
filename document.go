@@ -46,7 +46,7 @@ type Document struct {
 	identifiers [][]string
 }
 
-func NewDocument(raw []byte, opts ...DocumentOption) *Document {
+func NewDocument(raw []byte, opts ...DocumentOption) (*Document, error) {
 	doc := &Document{
 		raw:         raw,
 		gids:        map[string]int{},
@@ -67,7 +67,11 @@ func NewDocument(raw []byte, opts ...DocumentOption) *Document {
 		opt(doc)
 	}
 
-	return doc
+	if err := validateDuplicateIdentifiers(doc.raw, doc.identifiers); err != nil {
+		return nil, fmt.Errorf("error in identifiers: %s", err.Error())
+	}
+
+	return doc, nil
 }
 
 func createInitialDiff(raw []byte) []Operation {
@@ -224,6 +228,10 @@ func (d *Document) ApplyChanges(changes Changes) error {
 	var err error
 	workingCopy.raw, err = patch(workingCopy.raw, changes.Diff, workingCopy.identifiers)
 	if err != nil {
+		return fmt.Errorf("patch error: can't apply changeID %s: %s", changes.Gid, err.Error())
+	}
+
+	if err := validateDuplicateIdentifiers(workingCopy.raw, workingCopy.identifiers); err != nil {
 		return fmt.Errorf("patch error: can't apply changeID %s: %s", changes.Gid, err.Error())
 	}
 
