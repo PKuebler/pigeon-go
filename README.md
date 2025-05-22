@@ -1,6 +1,6 @@
 #  Pigeon-Go [![codecov](https://codecov.io/gh/PKuebler/pigeon-go/graph/badge.svg?token=YM26YKAWUJ)](https://codecov.io/gh/PKuebler/pigeon-go)
 
-A JSON patch module to exchange data compatible with the JS Package [Pigeon](https://github.com/frameable/pigeon).
+A JSON patch module to exchange data compatible only with the forked JS Package [Pigeon](https://github.com/spiegeltechlab/pigeon).
 
 ## Production ready?
 
@@ -19,7 +19,7 @@ import (
 func main() {
     doc := pigeongo.NewDocument([]byte(`{ "name": "Philipp" }`))
 
-    err := doc.ApplyChanges(Changes{
+    err := doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -28,9 +28,9 @@ func main() {
 				Prev:  rawMessage(`"Philipp"`),
 			},
 		},
-		Ts:  2,
-		Cid: "50reifj9hyt",
-		Gid: "dva96nqsdd",
+		TimestampMillis:  2,
+		ClientID: "50reifj9hyt",
+		ChangeID: "dva96nqsdd",
 	})
 
     // Print JSON
@@ -48,5 +48,5 @@ pigeongo.NewDocument([]byte(`[{ "attrs": { "id": 123 }, "name": "Philipp" }]`), 
 
 ## Differences to the Javascript version
 
-- With Changes it is possible to use a `mid` in addition to the `gid`. For example, it is also possible to transport a Kafka, Redis or network protocol ID.
+- With Changes it is possible to use a `msg_id` in addition to the `change_id`. For example, it is also possible to transport a Kafka, Redis or network protocol ID.
 - If a command fails, the document remains in its initial state. A broken state is possible in PigeonJS.

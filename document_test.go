@@ -30,12 +30,12 @@ func TestCreateDocument(t *testing.T) {
 	assert.NotNil(t, doc)
 }
 
-func TestApplyChanges(t *testing.T) {
+func TestApplyChange(t *testing.T) {
 	t.Parallel()
 
 	doc, err := NewDocument([]byte(`{ "name": "Philipp" }`))
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -44,14 +44,14 @@ func TestApplyChanges(t *testing.T) {
 				Prev:  rawMessage(`"Philipp"`),
 			},
 		},
-		Ts:  2,
-		Cid: "50reifj9hyt",
-		Gid: "dva96nqsdd",
-		Mid: "abcdef",
+		TimestampMillis: 2,
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "dva96nqsdd",
+		MessageID:       "abcdef",
 	})
 	assert.Nil(t, err)
 	// add old message
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -60,13 +60,13 @@ func TestApplyChanges(t *testing.T) {
 				Prev:  rawMessage(`"Philipp"`),
 			},
 		},
-		Ts:  1,
-		Cid: "50reifj9hyt",
-		Gid: "fhs52fqgdd",
+		TimestampMillis: 1,
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "fhs52fqgdd",
 	})
 	assert.Nil(t, err)
 	// add old message
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -75,13 +75,13 @@ func TestApplyChanges(t *testing.T) {
 				Prev:  rawMessage(`"Dieter"`),
 			},
 		},
-		Ts:  0,
-		Cid: "50reifj9hyt",
-		Gid: "fhs52fqgdd",
-		Mid: "sdfsdf",
+		TimestampMillis: 0,
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "fhs52fqgdd",
+		MessageID:       "sdfsdf",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:   "remove",
@@ -89,9 +89,9 @@ func TestApplyChanges(t *testing.T) {
 				Prev: rawMessage(`"Dieter"`),
 			},
 		},
-		Ts:  5,
-		Cid: "50reifj9hyt",
-		Gid: "hhde2ffcgj",
+		TimestampMillis: 5,
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "hhde2ffcgj",
 	})
 
 	assert.Equal(t, `{"name":"Phil"}`, string(doc.JSON()))
@@ -100,13 +100,13 @@ func TestApplyChanges(t *testing.T) {
 	_, err = json.Marshal(doc.History())
 	assert.NoError(t, err)
 
-	assert.Equal(t, "abcdef", doc.History()[2].Mid, doc.History()[2].Gid)
+	assert.Equal(t, "abcdef", doc.History()[2].MessageID, doc.History()[2].ChangeID)
 
 	assert.Nil(t, doc.ReduceHistory(5))
 	assert.Len(t, doc.History(), 1)
 }
 
-func BenchmarkApplyChanges(b *testing.B) {
+func BenchmarkApplyChange(b *testing.B) {
 	doc, err := NewDocument([]byte(`{ "name": "Philipp" }`))
 	assert.Nil(b, err)
 	b.ResetTimer()
@@ -114,7 +114,7 @@ func BenchmarkApplyChanges(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		// generate random string
 		nextValue := rawMessage(uuid.New().String())
-		_ = doc.ApplyChanges(Changes{
+		_ = doc.ApplyChange(Change{
 			Diff: []Operation{
 				{
 					Op:    "replace",
@@ -123,9 +123,9 @@ func BenchmarkApplyChanges(b *testing.B) {
 					Prev:  lastValue,
 				},
 			},
-			Ts:  int64(n),
-			Cid: "50reifj9hyt",
-			Gid: "dva96nqsdd",
+			TimestampMillis: int64(n),
+			ClientID:        "50reifj9hyt",
+			ChangeID:        "dva96nqsdd",
 		})
 		lastValue = nextValue
 	}
@@ -242,7 +242,7 @@ func TestIdentifiers(t *testing.T) {
 			}
 
 			// patch name by identifier
-			err = doc.ApplyChanges(Changes{
+			err = doc.ApplyChange(Change{
 				Diff: []Operation{
 					{
 						Op:    "replace",
@@ -251,9 +251,9 @@ func TestIdentifiers(t *testing.T) {
 						Prev:  rawMessage(`"card1"`),
 					},
 				},
-				Ts:  1,
-				Cid: "50reifj9hyt",
-				Gid: "dva96nqsdd",
+				TimestampMillis: 1,
+				ClientID:        "50reifj9hyt",
+				ChangeID:        "dva96nqsdd",
 			})
 
 			if testCase.expectedError == "" {
@@ -278,9 +278,9 @@ func TestOptions(t *testing.T) {
 	assert.Nil(t, err)
 
 	firstEntry := doc.History()[0]
-	assert.Equal(t, now.UnixMilli(), firstEntry.Ts)
-	assert.Equal(t, "client-id", firstEntry.Cid)
-	assert.Equal(t, "g-id", firstEntry.Gid)
+	assert.Equal(t, now.UnixMilli(), firstEntry.TimestampMillis)
+	assert.Equal(t, "client-id", firstEntry.ClientID)
+	assert.Equal(t, "g-id", firstEntry.ChangeID)
 }
 
 func TestClone(t *testing.T) {
@@ -289,7 +289,7 @@ func TestClone(t *testing.T) {
 	doc, err := NewDocument([]byte(`{"id": "123"}`))
 	assert.Nil(t, err)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -298,12 +298,12 @@ func TestClone(t *testing.T) {
 				Prev:  rawMessage(`"123"`),
 			},
 		},
-		Ts:  1,
-		Cid: "50reifj9hyt",
-		Gid: "dva96nqsdd",
+		TimestampMillis: 1,
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "dva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "add",
@@ -311,9 +311,9 @@ func TestClone(t *testing.T) {
 				Value: rawMessage(`"baa"`),
 			},
 		},
-		Ts:  50,
-		Cid: "50reifj9hyt",
-		Gid: "jdva96nqsdd",
+		TimestampMillis: 50,
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "jdva96nqsdd",
 	})
 	assert.Nil(t, err)
 
@@ -325,7 +325,7 @@ func TestClone(t *testing.T) {
 	assert.Len(t, doc.History(), 1)
 	assert.Len(t, clone.History(), 3)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -334,36 +334,36 @@ func TestClone(t *testing.T) {
 				Prev:  rawMessage(`"card2"`),
 			},
 		},
-		Ts:  110,
-		Cid: "50reifj9hyt",
-		Gid: "hre46nqsdd",
+		TimestampMillis: 110,
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "hre46nqsdd",
 	})
 	assert.Nil(t, err)
 	assert.NotEqual(t, string(doc.JSON()), string(clone.JSON()))
 
-	// don't find doc gid in clone gid list
-	_, found := clone.gids["hre46nqsdd"]
+	// don't find doc changeID in clone changeID list
+	_, found := clone.changeIDs["hre46nqsdd"]
 	assert.False(t, found)
 
 	assert.Nil(t, doc.ReduceHistory(108))
 	assert.Len(t, doc.History(), 2)
-	assert.Equal(t, "hre46nqsdd", doc.History()[1].Gid)
+	assert.Equal(t, "hre46nqsdd", doc.History()[1].ChangeID)
 }
 
 func TestReduceHistory(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now().Add(-1 * time.Hour)
-	doc, err := NewDocument([]byte(`{"id": "123"}`), WithInitialIDs("client-id", "change-id"), WithInitialMid("msg-id"), WithInitialTime(now))
+	doc, err := NewDocument([]byte(`{"id": "123"}`), WithInitialIDs("client-id", "change-id"), WithInitialMessageID("msg-id"), WithInitialTime(now))
 	assert.Nil(t, err)
 
 	assert.Nil(t, doc.ReduceHistory(2000))
 	assert.Len(t, doc.History(), 1)
-	assert.Equal(t, "change-id", doc.History()[0].Gid)
-	assert.Equal(t, "client-id", doc.History()[0].Cid)
-	assert.Equal(t, "msg-id", doc.History()[0].Mid)
+	assert.Equal(t, "change-id", doc.History()[0].ChangeID)
+	assert.Equal(t, "client-id", doc.History()[0].ClientID)
+	assert.Equal(t, "msg-id", doc.History()[0].MessageID)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -372,13 +372,13 @@ func TestReduceHistory(t *testing.T) {
 				Prev:  rawMessage(`"123"`),
 			},
 		},
-		Ts:  now.Add(10 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "dva96nqsdd",
-		Mid: "50reifj9hyt-dva96nqsdd",
+		TimestampMillis: now.Add(10 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "dva96nqsdd",
+		MessageID:       "50reifj9hyt-dva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "add",
@@ -386,49 +386,49 @@ func TestReduceHistory(t *testing.T) {
 				Value: rawMessage(`"baa"`),
 			},
 		},
-		Ts:  now.Add(60 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "jdva96nqsdd",
-		Mid: "50reifj9hyt-jdva96nqsdd",
+		TimestampMillis: now.Add(60 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "jdva96nqsdd",
+		MessageID:       "50reifj9hyt-jdva96nqsdd",
 	})
 	assert.Nil(t, err)
 
 	clone := doc.Clone()
 	assert.Nil(t, clone.ReduceHistory(now.Add(20*time.Second).UnixMilli()))
 	assert.Len(t, clone.History(), 2)
-	assert.Equal(t, "dva96nqsdd", clone.History()[0].Gid)
-	assert.Equal(t, "50reifj9hyt-dva96nqsdd", clone.History()[0].Mid)
+	assert.Equal(t, "dva96nqsdd", clone.History()[0].ChangeID)
+	assert.Equal(t, "50reifj9hyt-dva96nqsdd", clone.History()[0].MessageID)
 
 	// reduce with only the initial diff
 	clone = doc.Clone()
 	assert.Nil(t, clone.ReduceHistory(now.Add(2*time.Hour).UnixMilli()))
 	assert.Len(t, clone.History(), 1)
-	assert.Equal(t, "jdva96nqsdd", clone.History()[0].Gid)
-	assert.Equal(t, "50reifj9hyt-jdva96nqsdd", clone.History()[0].Mid)
+	assert.Equal(t, "jdva96nqsdd", clone.History()[0].ChangeID)
+	assert.Equal(t, "50reifj9hyt-jdva96nqsdd", clone.History()[0].MessageID)
 
 	assert.Nil(t, clone.ReduceHistory(now.Add(4*time.Hour).UnixMilli()))
 	assert.Len(t, clone.History(), 1)
-	assert.Equal(t, "jdva96nqsdd", clone.History()[0].Gid)
-	assert.Equal(t, "50reifj9hyt-jdva96nqsdd", clone.History()[0].Mid)
+	assert.Equal(t, "jdva96nqsdd", clone.History()[0].ChangeID)
+	assert.Equal(t, "50reifj9hyt-jdva96nqsdd", clone.History()[0].MessageID)
 
 	// reduce with history, but nothing to reduce
 	clone = doc.Clone()
 	assert.Nil(t, clone.ReduceHistory(0))
 	assert.Len(t, clone.History(), 3)
-	assert.Equal(t, "change-id", clone.History()[0].Gid)
-	assert.Equal(t, "client-id", clone.History()[0].Cid)
-	assert.Equal(t, "msg-id", clone.History()[0].Mid)
-	assert.Equal(t, now.UnixMilli(), clone.History()[0].Ts)
+	assert.Equal(t, "change-id", clone.History()[0].ChangeID)
+	assert.Equal(t, "client-id", clone.History()[0].ClientID)
+	assert.Equal(t, "msg-id", clone.History()[0].MessageID)
+	assert.Equal(t, now.UnixMilli(), clone.History()[0].TimestampMillis)
 }
 
 func TestReduceHistoryWithIDs(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now().Add(-1 * time.Hour)
-	doc, err := NewDocument([]byte(`{"id": "123", "body":[{"id":"card1","value":"test"},{"id":"card2","value":"baa"}]}`), WithInitialIDs("client-id", "change-id"), WithInitialMid("msg-id"), WithInitialTime(now))
+	doc, err := NewDocument([]byte(`{"id": "123", "body":[{"id":"card1","value":"test"},{"id":"card2","value":"baa"}]}`), WithInitialIDs("client-id", "change-id"), WithInitialMessageID("msg-id"), WithInitialTime(now))
 	assert.Nil(t, err)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "add",
@@ -436,13 +436,13 @@ func TestReduceHistoryWithIDs(t *testing.T) {
 				Value: rawMessage(`{"id":"card3","value":"tttt"}`),
 			},
 		},
-		Ts:  now.Add(10 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "dva96nqsdd",
-		Mid: "50reifj9hyt-dva96nqsdd",
+		TimestampMillis: now.Add(10 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "dva96nqsdd",
+		MessageID:       "50reifj9hyt-dva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -450,13 +450,13 @@ func TestReduceHistoryWithIDs(t *testing.T) {
 				Value: rawMessage(`"bar"`),
 			},
 		},
-		Ts:  now.Add(40 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "hreifj9hyt",
-		Mid: "50reifj9hyt-hreifj9hyt",
+		TimestampMillis: now.Add(40 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "hreifj9hyt",
+		MessageID:       "50reifj9hyt-hreifj9hyt",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -464,39 +464,39 @@ func TestReduceHistoryWithIDs(t *testing.T) {
 				Value: rawMessage(`"retert"`),
 			},
 		},
-		Ts:  now.Add(40 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "75reifj9hyt",
-		Mid: "50reifj9hyt-75reifj9hyt",
+		TimestampMillis: now.Add(40 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "75reifj9hyt",
+		MessageID:       "50reifj9hyt-75reifj9hyt",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:   "remove",
 				Path: "/body/[card3]",
 			},
 		},
-		Ts:  now.Add(60 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "jdva96nqsdd",
-		Mid: "50reifj9hyt-jdva96nqsdd",
+		TimestampMillis: now.Add(60 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "jdva96nqsdd",
+		MessageID:       "50reifj9hyt-jdva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:   "remove",
 				Path: "/body/[card2]",
 			},
 		},
-		Ts:  now.Add(65 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "5gdva96nqsdd",
-		Mid: "50reifj9hyt-5gdva96nqsdd",
+		TimestampMillis: now.Add(65 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "5gdva96nqsdd",
+		MessageID:       "50reifj9hyt-5gdva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "add",
@@ -504,13 +504,13 @@ func TestReduceHistoryWithIDs(t *testing.T) {
 				Value: rawMessage(`{"id":"card4","value":"ooooo"}`),
 			},
 		},
-		Ts:  now.Add(75 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "6gdva96nqsdd",
-		Mid: "50reifj9hyt-6gdva96nqsdd",
+		TimestampMillis: now.Add(75 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "6gdva96nqsdd",
+		MessageID:       "50reifj9hyt-6gdva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "add",
@@ -518,23 +518,23 @@ func TestReduceHistoryWithIDs(t *testing.T) {
 				Value: rawMessage(`{"id":"card5","value":"gggggg"}`),
 			},
 		},
-		Ts:  now.Add(80 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "7gdva96nqsdd",
-		Mid: "50reifj9hyt-7gdva96nqsdd",
+		TimestampMillis: now.Add(80 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "7gdva96nqsdd",
+		MessageID:       "50reifj9hyt-7gdva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:   "remove",
 				Path: "/body/2",
 			},
 		},
-		Ts:  now.Add(85 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "8gdva96nqsdd",
-		Mid: "50reifj9hyt-8gdva96nqsdd",
+		TimestampMillis: now.Add(85 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "8gdva96nqsdd",
+		MessageID:       "50reifj9hyt-8gdva96nqsdd",
 	})
 	assert.Nil(t, err)
 
@@ -548,7 +548,7 @@ func TestFastForwardChanges(t *testing.T) {
 	doc, err := NewDocument([]byte(`{"id":"card1"}`))
 	assert.Nil(t, err)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -557,13 +557,13 @@ func TestFastForwardChanges(t *testing.T) {
 				Prev:  rawMessage(`"card1"`),
 			},
 		},
-		Ts:  now.Add(10 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "dva96nqsdd",
+		TimestampMillis: now.Add(10 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "dva96nqsdd",
 	})
 	assert.Nil(t, err)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -572,13 +572,13 @@ func TestFastForwardChanges(t *testing.T) {
 				Prev:  rawMessage(`"card2"`),
 			},
 		},
-		Ts:  now.Add(20 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "gdva96nqsdd",
+		TimestampMillis: now.Add(20 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "gdva96nqsdd",
 	})
 	assert.Nil(t, err)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -587,13 +587,13 @@ func TestFastForwardChanges(t *testing.T) {
 				Prev:  rawMessage(`"card3"`),
 			},
 		},
-		Ts:  now.Add(30 * time.Second).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "hdva96nqsdd",
+		TimestampMillis: now.Add(30 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "hdva96nqsdd",
 	})
 	assert.Nil(t, err)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -602,15 +602,15 @@ func TestFastForwardChanges(t *testing.T) {
 				Prev:  rawMessage(`"card1"`),
 			},
 		},
-		Ts:  now.UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "udva96nqsdd",
+		TimestampMillis: now.UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "udva96nqsdd",
 	})
 	assert.Nil(t, err)
 
 	ids := []string{}
 	for _, change := range doc.History() {
-		ids = append(ids, change.Gid)
+		ids = append(ids, change.ChangeID)
 	}
 	assert.Equal(t, []string{"0", "udva96nqsdd", "dva96nqsdd", "gdva96nqsdd", "hdva96nqsdd"}, ids)
 	assert.Equal(t, `{"id":"card4"}`, string(doc.JSON()))
@@ -623,7 +623,7 @@ func TestWrongPrev(t *testing.T) {
 	doc, err := NewDocument([]byte(`{"id":"card1"}`))
 	assert.Nil(t, err)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -632,12 +632,12 @@ func TestWrongPrev(t *testing.T) {
 				Prev:  rawMessage(`"baa"`),
 			},
 		},
-		Ts:  now.Add(10 * time.Minute).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "dva96nqsdd",
+		TimestampMillis: now.Add(10 * time.Minute).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "dva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -646,12 +646,12 @@ func TestWrongPrev(t *testing.T) {
 				Prev:  rawMessage(`"foo"`),
 			},
 		},
-		Ts:  now.Add(20 * time.Minute).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "gdva96nqsdd",
+		TimestampMillis: now.Add(20 * time.Minute).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "gdva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -660,12 +660,12 @@ func TestWrongPrev(t *testing.T) {
 				Prev:  rawMessage(`"other value"`),
 			},
 		},
-		Ts:  now.Add(15 * time.Minute).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "hdva96nqsdd",
+		TimestampMillis: now.Add(15 * time.Minute).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "hdva96nqsdd",
 	})
 	assert.Nil(t, err)
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:    "replace",
@@ -674,9 +674,9 @@ func TestWrongPrev(t *testing.T) {
 				Prev:  rawMessage(`"oh"`),
 			},
 		},
-		Ts:  now.Add(18 * time.Minute).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "ba96nqsdd",
+		TimestampMillis: now.Add(18 * time.Minute).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "ba96nqsdd",
 	})
 	assert.Nil(t, err)
 	fmt.Println("------")
@@ -694,16 +694,16 @@ func TestRemove(t *testing.T) {
 	doc, err := NewDocument([]byte(`{"cards":[{"id":"card1"}]}`))
 	assert.Nil(t, err)
 
-	err = doc.ApplyChanges(Changes{
+	err = doc.ApplyChange(Change{
 		Diff: []Operation{
 			{
 				Op:   "remove",
 				Path: "/cards/[card132]",
 			},
 		},
-		Ts:  now.Add(5 * time.Minute).UnixMilli(),
-		Cid: "50reifj9hyt",
-		Gid: "dva96nqsdd",
+		TimestampMillis: now.Add(5 * time.Minute).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "dva96nqsdd",
 	})
 
 	assert.Len(t, doc.history, 1)
@@ -735,13 +735,13 @@ func TestDiff(t *testing.T) {
 	assert.Nil(t, errA)
 	assert.Nil(t, errB)
 
-	changes, err := docA.Diff(docB)
-	changes.Ts = time.Now().UnixMilli()
-	changes.Cid = "50reifj9hyt"
-	changes.Gid = "dva96nqsdd"
+	change, err := docA.Diff(docB)
+	change.TimestampMillis = time.Now().UnixMilli()
+	change.ClientID = "50reifj9hyt"
+	change.ChangeID = "dva96nqsdd"
 	assert.Nil(t, err)
 
-	err = docA.ApplyChanges(changes)
+	err = docA.ApplyChange(change)
 	assert.Nil(t, err)
 
 	assert.Equal(t, string(sortKeys(rawB)), string(sortKeys(docA.JSON())))

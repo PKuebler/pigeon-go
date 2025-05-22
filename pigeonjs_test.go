@@ -19,10 +19,10 @@ func TestPigeonJS(t *testing.T) {
 	var testCases []*struct {
 		OldDocument json.RawMessage `json:"oldDocument"`
 		NewDocument json.RawMessage `json:"newDocument"`
-		Changes     Changes         `json:"changes"`
+		Change      Change          `json:"change"`
 		Result      json.RawMessage `json:"result"`
 		Name        string          `json:"name"`
-		GoChanges   Changes         `json:"goChanges,omitempty"`
+		GoChange    Change          `json:"goChange,omitempty"`
 		GoResult    json.RawMessage `json:"goResult"`
 	}
 	err = json.Unmarshal(file, &testCases)
@@ -45,55 +45,55 @@ func TestPigeonJS(t *testing.T) {
 			}),
 		)
 		assert.Nil(t, err)
-		changes, err := oldDocument.Diff(newDocument)
+		change, err := oldDocument.Diff(newDocument)
 		assert.Nil(t, err)
 
 		// format values
-		for i, op := range changes.Diff {
-			changes.Diff[i] = formatOperations(op)
+		for i, op := range change.Diff {
+			change.Diff[i] = formatOperations(op)
 		}
-		for i, op := range testCase.Changes.Diff {
-			testCase.Changes.Diff[i] = formatOperations(op)
+		for i, op := range testCase.Change.Diff {
+			testCase.Change.Diff[i] = formatOperations(op)
 		}
 
 		// set random values, that are static from testfile
-		changes.Ts = testCase.Changes.Ts
-		changes.Cid = testCase.Changes.Cid
-		changes.Gid = testCase.Changes.Gid
-		changes.Seq = testCase.Changes.Seq
+		change.TimestampMillis = testCase.Change.TimestampMillis
+		change.ClientID = testCase.Change.ClientID
+		change.ChangeID = testCase.Change.ChangeID
+		change.Seq = testCase.Change.Seq
 
-		testCase.GoChanges = testCase.Changes
+		testCase.GoChange = testCase.Change
 
-		rawTestChanges, _ := json.Marshal(testCase.Changes)
-		rawDiffChanges, _ := json.Marshal(changes)
+		rawTestChange, _ := json.Marshal(testCase.Change)
+		rawDiffChange, _ := json.Marshal(change)
 
 		failed := false
 
 		pigeonJSDoc := oldDocument.Clone()
 
-		// use own changes
-		fmt.Println("own changes!")
-		err = oldDocument.ApplyChanges(changes)
-		if !assert.Nil(t, err, "%s - ownChanges Warning", testCase.Name) {
+		// use own change
+		fmt.Println("own change!")
+		err = oldDocument.ApplyChange(change)
+		if !assert.Nil(t, err, "%s - ownChange Warning", testCase.Name) {
 			failed = true
 		}
-		if !assert.Equal(t, string(sortKeys(testCase.NewDocument)), string(sortKeys(oldDocument.JSON())), "testcase %s - ownChanges new document", testCase.Name) {
+		if !assert.Equal(t, string(sortKeys(testCase.NewDocument)), string(sortKeys(oldDocument.JSON())), "testcase %s - ownChange new document", testCase.Name) {
 			failed = true
 		}
 		testCase.GoResult = json.RawMessage(oldDocument.JSON())
 
-		// use pigoenJS changes
-		fmt.Println("pigoenJS changes")
-		err = pigeonJSDoc.ApplyChanges(testCase.Changes)
-		if !assert.Nil(t, err, "testcase %d - pigeonChanges Warning", i) {
+		// use pigoenJS change
+		fmt.Println("pigoenJS change")
+		err = pigeonJSDoc.ApplyChange(testCase.Change)
+		if !assert.Nil(t, err, "testcase %d - pigeonChange Warning", i) {
 			failed = true
 		}
-		if !assert.Equal(t, string(sortKeys(testCase.Result)), string(sortKeys(pigeonJSDoc.JSON())), "testcase %d - pigeonChanges new document", i) {
+		if !assert.Equal(t, string(sortKeys(testCase.Result)), string(sortKeys(pigeonJSDoc.JSON())), "testcase %d - pigeonChange new document", i) {
 			failed = true
 		}
 
 		if failed {
-			assert.Equal(t, string(rawTestChanges), string(rawDiffChanges), "testcase %d - changes", i)
+			assert.Equal(t, string(rawTestChange), string(rawDiffChange), "testcase %d - change", i)
 		}
 	}
 
