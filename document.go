@@ -21,45 +21,45 @@ func WithIdentifiers(identifiers [][]string) DocumentOption {
 
 func WithInitialTime(t time.Time) DocumentOption {
 	return func(d *Document) {
-		d.history[0].Ts = t.UnixMilli()
+		d.history[0].TimestampMillis = t.UnixMilli()
 	}
 }
 
-func WithInitialIDs(cid, gid string) DocumentOption {
+func WithInitialIDs(clientID, changeID string) DocumentOption {
 	return func(d *Document) {
-		d.history[0].Cid = cid
-		d.history[0].Gid = gid
+		d.history[0].ClientID = clientID
+		d.history[0].ChangeID = changeID
 	}
 }
 
-func WithInitialMid(mid string) DocumentOption {
+func WithInitialMessageID(messageID string) DocumentOption {
 	return func(d *Document) {
-		d.history[0].Mid = mid
+		d.history[0].MessageID = messageID
 	}
 }
 
 type Document struct {
 	raw         []byte
-	history     []Changes
-	gids        map[string]int
-	stash       []Changes
+	history     []Change
+	changeIDs   map[string]int
+	stash       []Change
 	identifiers [][]string
 }
 
 func NewDocument(raw []byte, opts ...DocumentOption) (*Document, error) {
 	doc := &Document{
 		raw:         raw,
-		gids:        map[string]int{},
-		stash:       []Changes{},
+		changeIDs:   map[string]int{},
+		stash:       []Change{},
 		identifiers: [][]string{{"id"}},
 	}
 
-	doc.history = []Changes{
+	doc.history = []Change{
 		{
-			Diff: createInitialDiff(raw),
-			Ts:   0,
-			Cid:  "0",
-			Gid:  "0",
+			Diff:            createInitialDiff(raw),
+			TimestampMillis: 0,
+			ClientID:        "0",
+			ChangeID:        "0",
 		},
 	}
 
@@ -109,13 +109,13 @@ func createInitialDiff(raw []byte) []Operation {
 	return diff
 }
 
-type Changes struct {
-	Diff []Operation `json:"diff"`
-	Ts   int64       `json:"ts"`
-	Cid  string      `json:"cid"`
-	Seq  int         `json:"seq"`
-	Gid  string      `json:"gid"`
-	Mid  string      `json:"mid,omitempty"`
+type Change struct {
+	Diff            []Operation `json:"diff"`
+	TimestampMillis int64       `json:"timestamp_ms"`
+	ClientID        string      `json:"client_id"`
+	Seq             int         `json:"seq"`
+	ChangeID        string      `json:"change_id"`
+	MessageID       string      `json:"msg_id,omitempty"`
 }
 
 func NewJsonpatchPatch(diff []Operation) jsonpatch.Patch {
@@ -136,25 +136,25 @@ func (d *Document) JSON() []byte {
 	return d.raw
 }
 
-func (d *Document) History() []Changes {
+func (d *Document) History() []Change {
 	return d.history
 }
 
 func (d *Document) Clone() *Document {
 	clone := &Document{
 		raw:         make([]byte, len(d.raw)),
-		history:     make([]Changes, len(d.history)),
-		stash:       make([]Changes, len(d.stash)),
+		history:     make([]Change, len(d.history)),
+		stash:       make([]Change, len(d.stash)),
 		identifiers: make([][]string, len(d.identifiers)),
-		gids:        map[string]int{},
+		changeIDs:   map[string]int{},
 	}
 
 	copy(clone.raw, d.raw)
 	copy(clone.history, d.history)
 	copy(clone.stash, d.stash)
 
-	for a, b := range d.gids {
-		clone.gids[a] = b
+	for a, b := range d.changeIDs {
+		clone.changeIDs[a] = b
 	}
 
 	for i, identifiers := range d.identifiers {
@@ -170,7 +170,7 @@ func (d *Document) replaceByWorkingCopy(workingCopy *Document) {
 	d.raw = workingCopy.raw
 	d.history = workingCopy.history
 	d.stash = workingCopy.stash
-	d.gids = workingCopy.gids
+	d.changeIDs = workingCopy.changeIDs
 }
 
 // FastForwardChanges apply all changes from the stash. It change nothing, if one change failed.
@@ -186,10 +186,10 @@ func (d *Document) FastForwardChanges() error {
 }
 
 // RewindChanges rewind to a specific change. It change nothing, if one change failed.
-func (d *Document) RewindChanges(ts int64, cid string) error {
+func (d *Document) RewindChanges(timestampMillis int64, clientID string) error {
 	workingCopy := d.Clone()
 
-	if err := workingCopy.rewindChanges(ts, cid); err != nil {
+	if err := workingCopy.rewindChanges(timestampMillis, clientID); err != nil {
 		return err
 	}
 
@@ -197,77 +197,77 @@ func (d *Document) RewindChanges(ts int64, cid string) error {
 	return nil
 }
 
-// ApplyChanges to the document. It change nothing, if one operation failed.
-func (d *Document) ApplyChanges(changes Changes) error {
-	// skip changes if gid is processed
-	if _, ok := d.gids[changes.Gid]; ok {
+// ApplyChange to the document. It change nothing, if one operation failed.
+func (d *Document) ApplyChange(change Change) error {
+	// skip change if changeID is processed
+	if _, ok := d.changeIDs[change.ChangeID]; ok {
 		return nil
 	}
 
 	workingCopy := d.Clone()
 
-	if err := workingCopy.rewindChanges(changes.Ts, changes.Cid); err != nil {
-		return fmt.Errorf("patch error for changeID %s: %s", changes.Gid, err)
+	if err := workingCopy.rewindChanges(change.TimestampMillis, change.ClientID); err != nil {
+		return fmt.Errorf("patch error for changeID %s: %s", change.ChangeID, err)
 	}
 
-	// remove external _prev from changes
+	// remove external _prev from change
 	// set prev value
-	for i := range changes.Diff {
-		if changes.Diff[i].Op == "add" {
-			changes.Diff[i].Prev = nil
+	for i := range change.Diff {
+		if change.Diff[i].Op == "add" {
+			change.Diff[i].Prev = nil
 		} else {
-			changes.Diff[i].Prev = workingCopy.getValue(changes.Diff[i].Path)
+			change.Diff[i].Prev = workingCopy.getValue(change.Diff[i].Path)
 		}
 
-		if changes.Diff[i].Op == "remove" {
-			changes.Diff[i].Value = nil
+		if change.Diff[i].Op == "remove" {
+			change.Diff[i].Value = nil
 		}
 	}
 
 	// apply
 	var err error
-	workingCopy.raw, err = patch(workingCopy.raw, changes.Diff, workingCopy.identifiers)
+	workingCopy.raw, err = patch(workingCopy.raw, change.Diff, workingCopy.identifiers)
 	if err != nil {
-		return fmt.Errorf("patch error: can't apply changeID %s: %s", changes.Gid, err.Error())
+		return fmt.Errorf("patch error: can't apply changeID %s: %s", change.ChangeID, err.Error())
 	}
 
 	if err := validateDuplicateIdentifiers(workingCopy.raw, workingCopy.identifiers); err != nil {
-		return fmt.Errorf("patch error: can't apply changeID %s: %s", changes.Gid, err.Error())
+		return fmt.Errorf("patch error: can't apply changeID %s: %s", change.ChangeID, err.Error())
 	}
 
-	workingCopy.gids[changes.Gid] = 1
+	workingCopy.changeIDs[change.ChangeID] = 1
 
 	if err := workingCopy.fastForwardChanges(); err != nil {
-		return fmt.Errorf("patch error for changeID %s: %s", changes.Gid, err)
+		return fmt.Errorf("patch error for changeID %s: %s", change.ChangeID, err)
 	}
 
 	idx := len(workingCopy.history)
 	if idx == 0 {
-		workingCopy.history = append(workingCopy.history, changes)
+		workingCopy.history = append(workingCopy.history, change)
 		d.replaceByWorkingCopy(workingCopy)
 		return nil
 	}
 
 	// find position to insert
-	for idx > 1 && workingCopy.history[idx-1].Ts > changes.Ts {
+	for idx > 1 && workingCopy.history[idx-1].TimestampMillis > change.TimestampMillis {
 		idx--
 	}
 
 	// empty history or after last element
 	if len(workingCopy.history) == idx {
-		workingCopy.history = append(workingCopy.history, changes)
+		workingCopy.history = append(workingCopy.history, change)
 		d.replaceByWorkingCopy(workingCopy)
 		return nil
 	}
 
 	workingCopy.history = append(workingCopy.history[:idx+1], workingCopy.history[idx:]...)
-	workingCopy.history[idx] = changes
+	workingCopy.history[idx] = change
 
 	d.replaceByWorkingCopy(workingCopy)
 	return nil
 }
 
-func (d *Document) ReduceHistory(minTs int64) error {
+func (d *Document) ReduceHistory(minTimestampMillis int64) error {
 	if len(d.history) == 1 {
 		// only the initial diff, nothing to reduce
 		return nil
@@ -276,18 +276,18 @@ func (d *Document) ReduceHistory(minTs int64) error {
 	workingCopy := d.Clone()
 
 	// rewind all changes that are newer the minimum timestamp
-	if err := workingCopy.rewindChanges(minTs, ""); err != nil {
+	if err := workingCopy.rewindChanges(minTimestampMillis, ""); err != nil {
 		return err
 	}
 
 	// new first diff is the initial diff
-	newHistory := []Changes{
+	newHistory := []Change{
 		{
-			Diff: createInitialDiff(workingCopy.raw),
-			Ts:   workingCopy.history[len(workingCopy.history)-1].Ts,
-			Cid:  workingCopy.history[len(workingCopy.history)-1].Cid,
-			Gid:  workingCopy.history[len(workingCopy.history)-1].Gid,
-			Mid:  workingCopy.history[len(workingCopy.history)-1].Mid,
+			Diff:            createInitialDiff(workingCopy.raw),
+			TimestampMillis: workingCopy.history[len(workingCopy.history)-1].TimestampMillis,
+			ClientID:        workingCopy.history[len(workingCopy.history)-1].ClientID,
+			ChangeID:        workingCopy.history[len(workingCopy.history)-1].ChangeID,
+			MessageID:       workingCopy.history[len(workingCopy.history)-1].MessageID,
 		},
 	}
 
@@ -328,22 +328,22 @@ func (d *Document) fastForwardChanges() error {
 
 		d.raw, err = patch(d.raw, change.Diff, d.identifiers)
 		if err != nil {
-			return fmt.Errorf("fast forward error: can't patch changeID %s from stash: %s", change.Gid, err.Error())
+			return fmt.Errorf("fast forward error: can't patch changeID %s from stash: %s", change.ChangeID, err.Error())
 		}
 
-		d.gids[change.Gid] = 1
+		d.changeIDs[change.ChangeID] = 1
 		d.history = append(d.history, change)
 	}
-	d.stash = []Changes{}
+	d.stash = []Change{}
 
 	return nil
 }
 
 // rewindChanges will rewind all changes in the history. It will stop if a patch fails and reset nothing!
-func (d *Document) rewindChanges(ts int64, cid string) error {
+func (d *Document) rewindChanges(timestampMillis int64, clientID string) error {
 	for len(d.history) > 1 {
 		change := d.history[len(d.history)-1]
-		if change.Ts > ts || (change.Ts == ts && change.Cid > cid) {
+		if change.TimestampMillis > timestampMillis || (change.TimestampMillis == timestampMillis && change.ClientID > clientID) {
 			// get element and pop from history
 			c := d.history[len(d.history)-1]
 			d.history = d.history[:len(d.history)-1]
@@ -351,10 +351,10 @@ func (d *Document) rewindChanges(ts int64, cid string) error {
 			var err error
 			d.raw, err = patch(d.raw, reverse(c.Diff, d.identifiers), d.identifiers)
 			if err != nil {
-				return fmt.Errorf("rewind error: can't reverse patch changeID %s from history: %s", change.Gid, err.Error())
+				return fmt.Errorf("rewind error: can't reverse patch changeID %s from history: %s", change.ChangeID, err.Error())
 			}
 
-			delete(d.gids, c.Gid)
+			delete(d.changeIDs, c.ChangeID)
 			d.stash = append(d.stash, c)
 			continue
 		}
@@ -364,13 +364,13 @@ func (d *Document) rewindChanges(ts int64, cid string) error {
 	return nil
 }
 
-func (d *Document) Diff(right *Document) (Changes, error) {
+func (d *Document) Diff(right *Document) (Change, error) {
 	operations, err := diff(d.JSON(), right.JSON(), d.identifiers)
 	if err != nil {
-		return Changes{}, err
+		return Change{}, err
 	}
 
-	return Changes{
+	return Change{
 		Diff: operations,
 	}, nil
 }
