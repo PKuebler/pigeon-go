@@ -37,7 +37,7 @@ func TestValidateDuplicateIdentifiers(t *testing.T) {
 				{"id"},
 			},
 			expectError: true,
-			errorMsg:    "duplicate identifier found: [1] at index 1",
+			errorMsg:    "duplicate identifier found: id `[1]` at path /1",
 		},
 		{
 			name: "Bad JSON",
@@ -92,7 +92,7 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 			},
 			identifiers: [][]string{{"id"}},
 			expectError: true,
-			errorMsg:    "duplicate identifier found: [1] at index 1",
+			errorMsg:    "duplicate identifier found: id `[1]` at path /1",
 		},
 		{
 			name: "Nested objects with no duplicates",
@@ -121,7 +121,7 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 			},
 			identifiers: [][]string{{"id"}},
 			expectError: true,
-			errorMsg:    "duplicate identifier found: [2] at index 1",
+			errorMsg:    "duplicate identifier found: id `[2]` at path /[1]/children/1",
 		},
 		{
 			name: "Empty identifiers",
@@ -173,7 +173,7 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 			},
 			identifiers: [][]string{{"reference", "id"}},
 			expectError: true,
-			errorMsg:    "duplicate identifier found: [1] at index 1",
+			errorMsg:    "duplicate identifier found: id `[1]` at path /1",
 		},
 		{
 			name: "Duplicate ids in nested object",
@@ -185,7 +185,7 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 			},
 			identifiers: [][]string{{"id"}},
 			expectError: true,
-			errorMsg:    "duplicate identifier found: [1] at index 1",
+			errorMsg:    "duplicate identifier found: id `[1]` at path /children/1",
 		},
 		{
 			name: "Duplicate ids in nested array",
@@ -197,7 +197,7 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 			},
 			identifiers: [][]string{{"id"}},
 			expectError: true,
-			errorMsg:    "duplicate identifier found: [1] at index 1",
+			errorMsg:    "duplicate identifier found: id `[1]` at path /0/1",
 		},
 		{
 			name: "Empty ids",
@@ -207,7 +207,7 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 			},
 			identifiers: [][]string{{"id"}},
 			expectError: true,
-			errorMsg:    "duplicate identifier found: missing id at index 1",
+			errorMsg:    "duplicate identifier found: id `missing id` at path /1",
 		},
 	}
 
@@ -215,7 +215,7 @@ func TestWalkValidateDuplicateIdentifiers(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := walkValidateDuplicateIdentifiers(testCase.data, testCase.identifiers)
+			err := walkValidateDuplicateIdentifiers(testCase.data, "", testCase.identifiers)
 			if testCase.expectError {
 				assert.NotNil(t, err)
 				assert.EqualError(t, err, testCase.errorMsg)

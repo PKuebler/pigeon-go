@@ -17,18 +17,18 @@ func validateDuplicateIdentifiers(doc []byte, identifiers [][]string) error {
 		return err
 	}
 
-	return walkValidateDuplicateIdentifiers(data, identifiers)
+	return walkValidateDuplicateIdentifiers(data, "", identifiers)
 }
 
-func walkValidateDuplicateIdentifiers(data any, identifiers [][]string) error {
+func walkValidateDuplicateIdentifiers(data any, currentPath string, identifiers [][]string) error {
 	if len(identifiers) == 0 {
 		return nil
 	}
 
 	switch v := data.(type) {
 	case map[string]any:
-		for _, value := range v {
-			if err := walkValidateDuplicateIdentifiers(value, identifiers); err != nil {
+		for key, value := range v {
+			if err := walkValidateDuplicateIdentifiers(value, fmt.Sprintf("%s/%s", currentPath, key), identifiers); err != nil {
 				return err
 			}
 		}
@@ -42,15 +42,15 @@ func walkValidateDuplicateIdentifiers(data any, identifiers [][]string) error {
 					if id == "" {
 						id = "missing id"
 					}
-					return fmt.Errorf("duplicate identifier found: %s at index %d", id, i)
+					return fmt.Errorf("duplicate identifier found: id `%s` at path %s/%d", id, currentPath, i)
 				}
 				foundIdentifiers = append(foundIdentifiers, id)
 
-				if err := walkValidateDuplicateIdentifiers(value, identifiers); err != nil {
+				if err := walkValidateDuplicateIdentifiers(value, fmt.Sprintf("%s/%s", currentPath, id), identifiers); err != nil {
 					return err
 				}
 			case []any:
-				if err := walkValidateDuplicateIdentifiers(value, identifiers); err != nil {
+				if err := walkValidateDuplicateIdentifiers(value, fmt.Sprintf("%s/%d", currentPath, i), identifiers); err != nil {
 					return err
 				}
 			}
