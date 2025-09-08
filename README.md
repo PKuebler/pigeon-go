@@ -1,6 +1,8 @@
 # Pigeon-Go [![codecov](https://codecov.io/gh/PKuebler/pigeon-go/graph/badge.svg?token=YM26YKAWUJ)](https://codecov.io/gh/PKuebler/pigeon-go)
 
-A Go implementation of an enhanced JSON Patch system with operational transform capabilities for collaborative document editing. Pigeon-Go extends standard JSON Patch with identifier-based array operations to reduce conflicts in concurrent editing scenarios. It's working only with the Forked version of [Pigeon JS](https://github.com/spiegeltechlab/pigeon).
+Pigeon-Go is a Go library for synchronizing JSON documents across multiple machines, designed for collaborative editing with robust conflict resolution. Unlike CRDTs, Pigeon-Go uses operational transforms and identifier-based paths for changes, making debugging easier and change tracking more transparent. All modifications are applied to entire fields rather than supporting live cursor positions, which simplifies the architecture and improves reliability, especially in environments with network delays or out-of-order updates. The system extends standard JSON Patch with enhanced array operations and maintains a complete change history, ensuring consistent document state and easier conflict resolution.
+
+It's working only with the Forked version of [Pigeon JS](https://github.com/spiegeltechlab/pigeon).
 
 ## Overview
 
