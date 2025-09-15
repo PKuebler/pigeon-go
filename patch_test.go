@@ -170,7 +170,6 @@ func TestPatch(t *testing.T) {
 		assert.NoError(t, err, fmt.Sprintf("test %d", i))
 
 		result, err := patch(testCase.doc, operations, [][]string{{"id"}})
-		fmt.Printf("result: %s\n", string(result))
 		if testCase.wantError {
 			assert.Error(t, err, fmt.Sprintf("test %d", i))
 		} else {
