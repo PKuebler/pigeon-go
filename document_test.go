@@ -616,6 +616,87 @@ func TestFastForwardChanges(t *testing.T) {
 	assert.Equal(t, `{"id":"card4"}`, string(doc.JSON()))
 }
 
+func TestApplyChangesWithNull(t *testing.T) {
+	t.Parallel()
+
+	doc, err := NewDocument([]byte(`{"abc":"def","123":null}`))
+	assert.Nil(t, err)
+
+	now := time.Now()
+
+	err = doc.ApplyChange(Change{
+		Diff: []Operation{
+			{
+				Op:   "add",
+				Path: "/hello",
+			},
+			{
+				Op:    "add",
+				Path:  "/foo",
+				Value: rawMessage(`null`),
+			},
+			{
+				Op:    "replace",
+				Path:  "/abc",
+				Value: rawMessage(`null`),
+			},
+			{
+				Op:   "remove",
+				Path: "/123",
+			},
+		},
+		TimestampMillis: now.Add(5 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "dva96nqsdd",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, `{"abc":null,"foo":null,"hello":null}`, string(doc.JSON()))
+
+	// send a change, which need a reverse and fast forward of the changes
+	err = doc.ApplyChange(Change{
+		Diff: []Operation{
+			{
+				Op:    "add",
+				Path:  "/test",
+				Value: rawMessage(`123`),
+			},
+		},
+		TimestampMillis: now.UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "gdva96nqsdd",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, `{"abc":null,"foo":null,"hello":null,"test":123}`, string(doc.JSON()))
+
+	err = doc.ApplyChange(Change{
+		Diff: []Operation{
+			{
+				Op:   "add",
+				Path: "/bar",
+			},
+		},
+		TimestampMillis: now.Add(-5 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "hdva96nqsdd",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, `{"abc":null,"bar":null,"foo":null,"hello":null,"test":123}`, string(doc.JSON()))
+
+	err = doc.ApplyChange(Change{
+		Diff: []Operation{
+			{
+				Op:   "remove",
+				Path: "/bar",
+			},
+		},
+		TimestampMillis: now.Add(20 * time.Second).UnixMilli(),
+		ClientID:        "50reifj9hyt",
+		ChangeID:        "jdva96nqsdd",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, `{"abc":null,"foo":null,"hello":null,"test":123}`, string(doc.JSON()))
+}
+
 func TestWrongPrev(t *testing.T) {
 	t.Parallel()
 

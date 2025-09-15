@@ -147,6 +147,17 @@ func TestPatch(t *testing.T) {
 			want:      []byte(`{"body":[{"id":"id-1"},{"id":"id-3"},{"id":"id-2"},{"id":"id-5"},{"id":"id-6"},{"id":"id-7"},{"id":"id-4"}]}`),
 			wantError: false,
 		},
+		{
+			doc: []byte(`{"abc":"def","123":null}`),
+			patch: []byte(`[
+				{"op":"add","path":"/hello"},
+				{"op":"add","path":"/foo","value":null},
+				{"op":"replace","path":"/abc","value":null},
+				{"op":"remove","path":"/123"}
+			]`),
+			want:      []byte(`{"abc":null,"foo":null,"hello":null}`),
+			wantError: false,
+		},
 	}
 
 	for i, testCase := range testCases {
