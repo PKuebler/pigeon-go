@@ -18,7 +18,10 @@ func reverse(operations []Operation, identifiers [][]string) []Operation {
 			operation.Prev = nil
 
 			// if value is a object
-			id := findID(*operation.Value, identifiers)
+			var id string
+			if operation.Value != nil {
+				id = findID(*operation.Value, identifiers)
+			}
 			if id != "" {
 				parts := strings.Split(operation.Path, "/")
 				// if last part is an index position

@@ -147,6 +147,17 @@ func TestPatch(t *testing.T) {
 			want:      []byte(`{"body":[{"id":"id-1"},{"id":"id-3"},{"id":"id-2"},{"id":"id-5"},{"id":"id-6"},{"id":"id-7"},{"id":"id-4"}]}`),
 			wantError: false,
 		},
+		{
+			doc: []byte(`{"abc":"def","123":null}`),
+			patch: []byte(`[
+				{"op":"add","path":"/hello"},
+				{"op":"add","path":"/foo","value":null},
+				{"op":"replace","path":"/abc","value":null},
+				{"op":"remove","path":"/123"}
+			]`),
+			want:      []byte(`{"abc":null,"foo":null,"hello":null}`),
+			wantError: false,
+		},
 	}
 
 	for i, testCase := range testCases {
@@ -159,6 +170,7 @@ func TestPatch(t *testing.T) {
 		assert.NoError(t, err, fmt.Sprintf("test %d", i))
 
 		result, err := patch(testCase.doc, operations, [][]string{{"id"}})
+		fmt.Printf("result: %s\n", string(result))
 		if testCase.wantError {
 			assert.Error(t, err, fmt.Sprintf("test %d", i))
 		} else {
@@ -166,6 +178,7 @@ func TestPatch(t *testing.T) {
 		}
 		assert.JSONEq(t, string(testCase.want), string(result), fmt.Sprintf("test %d", i))
 	}
+	t.Error("done")
 }
 
 func BenchmarkPatch(b *testing.B) {
