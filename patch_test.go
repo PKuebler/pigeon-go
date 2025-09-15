@@ -178,7 +178,6 @@ func TestPatch(t *testing.T) {
 		}
 		assert.JSONEq(t, string(testCase.want), string(result), fmt.Sprintf("test %d", i))
 	}
-	t.Error("done")
 }
 
 func BenchmarkPatch(b *testing.B) {
