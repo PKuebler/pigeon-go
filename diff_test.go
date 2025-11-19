@@ -216,6 +216,7 @@ func TestDiffWithNull(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.description, func(t *testing.T) {
+			t.Parallel()
 			ops, err := diff([]byte(testCase.payloadA), []byte(testCase.payloadB), [][]string{{"id"}, {"reference", "id"}})
 			assert.Nil(t, err)
 
