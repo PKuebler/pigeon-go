@@ -105,7 +105,7 @@ func TestComparePrimitiveSlices(t *testing.T) {
 			expectedReplace: false,
 		},
 		{
-			description:     "differnet types",
+			description:     "different types",
 			left:            []any{"1"},
 			right:           []any{2345},
 			expectedReplace: true,
