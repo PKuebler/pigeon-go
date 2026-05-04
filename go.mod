@@ -3,7 +3,7 @@ module github.com/pkuebler/pigeon-go
 go 1.22
 
 require (
-	github.com/buger/jsonparser v1.1.1
+	github.com/buger/jsonparser v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/evanphx/json-patch.v5 v5.9.11
